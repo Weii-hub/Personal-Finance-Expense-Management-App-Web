@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap');
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Quicksand', sans-serif;
+  background-color: #fff9e6; /* Màu nền vàng pastel nhẹ nhàng */
+  color: #594a4e; /* Màu chữ nâu đen mượt mắt */
+}
+
+/* Nút bấm phong cách hoạt hình (có đổ bóng cứng 3D) */
+.btn {
+  border-radius: 25px;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+  transition: all 0.1s;
+  padding: 8px 20px;
+}
+
+.btn:active {
+  transform: translateY(4px);
+  box-shadow: none;
+}
+
+.btn-primary {
+  background-color: #ff9fb2; /* Hồng pastel */
+  color: white;
+  box-shadow: 0 4px 0 #e57d90;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #ff859d;
+  color: white;
+}
+
+.btn-success {
+  background-color: #a8e6cf; /* Xanh lá pastel */
+  color: #3b5c4f;
+  box-shadow: 0 4px 0 #8ad0b6;
+}
+
+.btn-success:hover {
+  background-color: #92d8be;
+  color: #3b5c4f;
+}
+
+/* Tùy chỉnh bảng (Table) */
+.table {
+  background-color: white;
+  border-radius: 20px;
+  overflow: hidden; /* Bo tròn góc bảng */
+  box-shadow: 0 8px 15px rgba(255, 170, 165, 0.15);
+  border: 2px solid #ffaaa5;
+}
+
+.table thead th {
+  background-color: #ffd3b6 !important; /* Cam đào pastel */
+  color: #594a4e;
+  border-bottom: none;
+  text-align: center;
+}
+
+.table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Khung nội dung chính */
+.container.mt-4 {
+  background-color: white;
+  border-radius: 30px;
+  padding: 30px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  border: 3px solid #ffaaa5; /* Viền khung cute */
+}
+
+/* Thanh điều hướng Navbar */
+.navbar {
+  background-color: #ffaaa5 !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  padding: 15px 20px;
+}
+.navbar-brand {
+  color: white !important;
+  font-weight: 700;
+  font-size: 1.5rem;
+  text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+}
+.nav-link {
+  color: white !important;
+  font-weight: 600;
+  background-color: rgba(255,255,255,0.2);
+  border-radius: 15px;
+  margin: 0 5px;
+  padding: 8px 15px !important;
+}
+.nav-link:hover {
+  background-color: white;
+  color: #ffaaa5 !important;
+}
+
+/* Input Form */
+.form-control {
+  border-radius: 15px;
+  border: 2px solid #ffd3b6;
+  padding: 10px 15px;
+}
+.form-control:focus {
+  border-color: #ffaaa5;
+  box-shadow: 0 0 0 0.25rem rgba(255, 170, 165, 0.25);
+}

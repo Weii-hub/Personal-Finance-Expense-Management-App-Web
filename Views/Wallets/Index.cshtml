@@ -1,0 +1,37 @@
+@model IEnumerable<PersonalFinanceApp.Models.Wallet>
+
+@{
+    ViewData["Title"] = "Quản lý Ví";
+}
+
+<div class="container mt-4">
+    <h2>Quản lý Ví tiền</h2>
+
+    <p>
+        <a asp-action="Create" class="btn btn-primary">Thêm ví mới</a>
+    </p>
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Tên Ví</th>
+                <th>Số dư</th>
+                <th>Icon</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+    @foreach (var item in Model) {
+            <tr>
+                <td><strong>@item.Name</strong></td>
+                <td class="text-success fw-bold">@item.InitialBalance.ToString("N0") đ</td>
+                <td>@item.Icon</td>
+                <td>
+                    <!-- Nút sửa/xóa sẽ làm ở bài sau -->
+                    <a href="#" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                    <a href="#" class="btn btn-sm btn-outline-danger">Xóa</a>
+                </td>
+            </tr>
+    }
+        </tbody>
+    </table>
+</div>

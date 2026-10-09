@@ -1,0 +1,40 @@
+@model PersonalFinanceApp.Models.Wallet
+
+@{
+    ViewData["Title"] = "Thêm Ví mới";
+}
+
+<div class="container mt-4">
+    <h2>Thêm Ví mới</h2>
+    <hr />
+    <div class="row">
+        <div class="col-md-6">
+            <form asp-action="Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                
+                <div class="form-group mb-3">
+                    <label asp-for="Name" class="control-label fw-bold">Tên ví</label>
+                    <input asp-for="Name" class="form-control" placeholder="VD: Ví MoMo, Thẻ Vietcombank..." />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label asp-for="InitialBalance" class="control-label fw-bold">Số dư ban đầu (VNĐ)</label>
+                    <input asp-for="InitialBalance" class="form-control" type="number" />
+                    <span asp-validation-for="InitialBalance" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label asp-for="Icon" class="control-label fw-bold">Icon (FontAwesome)</label>
+                    <input asp-for="Icon" class="form-control" value="fa-wallet" />
+                    <span asp-validation-for="Icon" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group mt-4">
+                    <input type="submit" value="Lưu Ví" class="btn btn-success px-4" />
+                    <a asp-action="Index" class="btn btn-secondary ms-2">Quay lại danh sách</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
