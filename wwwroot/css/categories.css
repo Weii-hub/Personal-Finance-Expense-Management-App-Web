@@ -1,0 +1,71 @@
+.category-panel,
+.category-form-card {
+    background: #fff;
+    border: 2px solid #ffe0d8;
+    border-radius: 22px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 22px rgba(89, 74, 78, .06);
+}
+
+.category-income {
+    border-top: 5px solid #198754;
+}
+
+.category-expense {
+    border-top: 5px solid #dc3545;
+}
+
+.category-heading-dot {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    margin-right: .45rem;
+}
+
+.income-dot {
+    background: #198754;
+}
+
+.expense-dot {
+    background: #dc3545;
+}
+
+.category-icon {
+    --category-color: #dc3545;
+    display: inline-flex;
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    margin-right: .55rem;
+    background: color-mix(in srgb, var(--category-color) 13%, white);
+    color: var(--category-color);
+}
+
+.category-preview {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+}
+
+.category-panel .table thead th {
+    text-align: left;
+}
+
+.category-panel .table td {
+    text-align: left;
+}
+
+.category-panel .table td:nth-child(2) {
+    text-align: center;
+}
+
+.category-panel .table td:last-child {
+    text-align: right;
+}
+
+.category-form-card {
+    max-width: 850px;
+}

@@ -1,0 +1,31 @@
+@model PersonalFinanceApp.Models.Category
+
+<div class="row g-3">
+    <div class="col-md-8">
+        <label asp-for="Name" class="form-label fw-bold">Tên danh mục</label>
+        <input asp-for="Name" class="form-control" maxlength="100" placeholder="Ví dụ: Ăn uống, Lương, Di chuyển" autofocus />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Type" class="form-label fw-bold">Loại danh mục</label>
+        <select asp-for="Type" class="form-select">
+            <option value="0">Chi tiêu</option>
+            <option value="1">Thu nhập</option>
+        </select>
+        <span asp-validation-for="Type" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="Icon" class="form-label fw-bold">Icon Font Awesome</label>
+        <input asp-for="Icon" class="form-control" placeholder="fa-utensils" />
+        <div class="form-text">Nhập tên icon, ví dụ: fa-utensils, fa-house, fa-money-bill-wave. Mặc định là fa-tag.</div>
+        <span asp-validation-for="Icon" class="text-danger"></span>
+    </div>
+    <div class="col-12">
+        <label class="form-label fw-bold">Màu phân loại</label>
+        <div class="d-flex align-items-center gap-2">
+            <span id="categoryPreview" class="category-icon category-preview"><i class="fa-solid fa-tag"></i></span>
+            <span id="categoryTypeLabel" class="fw-bold"></span>
+        </div>
+        <div class="form-text">Chi tiêu hiển thị màu đỏ; thu nhập hiển thị màu xanh lá.</div>
+    </div>
+</div>
