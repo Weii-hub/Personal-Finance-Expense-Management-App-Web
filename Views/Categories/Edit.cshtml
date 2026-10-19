@@ -1,0 +1,38 @@
+@model PersonalFinanceApp.Models.Category
+
+@{
+    ViewData["Title"] = "Sửa danh mục";
+}
+
+<div class="container mt-4 category-form-card">
+    <h2>✏️ Sửa danh mục</h2>
+    <p class="text-muted">Cập nhật tên hoặc loại của danh mục.</p>
+    <hr />
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <partial name="_CategoryForm" model="Model" />
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu thay đổi</button>
+            <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const type = document.getElementById('Type');
+            const preview = document.getElementById('categoryPreview');
+            const label = document.getElementById('categoryTypeLabel');
+            function updatePreview() {
+                const income = type.value === '1';
+                preview.style.backgroundColor = income ? '#198754' : '#dc3545';
+                label.textContent = income ? 'Thu nhập' : 'Chi tiêu';
+            }
+            type.addEventListener('change', updatePreview);
+            updatePreview();
+        })();
+    </script>
+}

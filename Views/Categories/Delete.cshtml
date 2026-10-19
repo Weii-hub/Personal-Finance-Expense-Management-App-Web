@@ -1,0 +1,35 @@
+@model PersonalFinanceApp.Models.Category
+
+@{
+    ViewData["Title"] = "Xóa danh mục";
+    bool hasTransactions = ViewBag.HasTransactions == true;
+}
+
+<div class="container mt-4 category-form-card">
+    <h2>🗑️ Xóa danh mục</h2>
+    <div class="alert @(hasTransactions ? "alert-warning" : "alert-danger") mt-3">
+        @if (hasTransactions)
+        {
+            <p class="mb-0">Danh mục <strong>@Model.Name</strong> đang được dùng trong giao dịch nên không thể xóa. Hãy chuyển hoặc xóa các giao dịch liên quan trước.</p>
+        }
+        else
+        {
+            <p class="mb-0">M có chắc muốn xóa danh mục <strong>@Model.Name</strong> không? Thao tác này không thể hoàn tác.</p>
+        }
+    </div>
+    <dl class="row">
+        <dt class="col-sm-3">Tên danh mục</dt>
+        <dd class="col-sm-9">@Model.Name</dd>
+        <dt class="col-sm-3">Loại</dt>
+        <dd class="col-sm-9">@(Model.Type == 1 ? "Thu nhập" : "Chi tiêu")</dd>
+    </dl>
+    <div class="d-flex gap-2">
+        @if (!hasTransactions)
+        {
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+                <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash me-1"></i> Xác nhận xóa</button>
+            </form>
+        }
+        <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+    </div>
+</div>
