@@ -1,16 +1,16 @@
 @model PersonalFinanceApp.Models.HomeDashboardViewModel
 
 @{
-    ViewData["Title"] = "Trang Chủ - Bé Quản Gia";
+    ViewData["Title"] = "Trang Chủ - CashFlow";
 }
 
 <div class="container mt-3">
     <!-- Hero Banner -->
     <div class="hero-banner p-4 p-md-5 mb-4 text-center rounded-4 shadow-sm" style="background: linear-gradient(135deg, #fff0f3 0%, #fff8f0 50%, #f0f7ff 100%); border: 2px solid #ffe0d8;">
-        <div class="display-3 mb-2">💸🧸</div>
-        <h1 class="display-5 fw-bold text-dark mb-2">Bé Quản Gia Tài Chính</h1>
+        <div class="display-3 mb-2">💸✨</div>
+        <h1 class="display-5 fw-bold text-dark mb-2">CashFlow - Quản Lý Tài Chính</h1>
         <p class="lead text-muted mx-auto mb-4" style="max-width: 650px;">
-            Chào mừng bạn! Ứng dụng ghi chép thu chi cá nhân với phong cách Pastel nhẹ nhàng, giúp bạn biến việc quản lý tiền bạc mỗi ngày thành một thói quen vui vẻ và tích cực.
+            Chào mừng bạn đến với <strong>CashFlow</strong>! Ứng dụng ghi chép thu chi cá nhân với phong cách Pastel nhẹ nhàng, giúp bạn kiểm soát dòng tiền và lập kế hoạch tài chính hiệu quả mỗi ngày.
         </p>
         <div class="d-flex flex-wrap justify-content-center gap-2">
             <a asp-controller="Transactions" asp-action="Create" class="btn btn-primary btn-lg shadow-sm">
@@ -69,7 +69,6 @@
                     </div>
                     <div>
                         <small class="text-muted text-uppercase fw-bold">Chi tháng này</small>
-                        <!-- Chuẩn tài chính: Hiển thị độ lớn chi tiêu là số dương màu đỏ, không để dấu trừ gây hiểu nhầm -->
                         <h4 class="mb-0 fw-bold text-danger">@Model.MonthlyExpense.ToString("N0") đ</h4>
                     </div>
                 </div>
