@@ -187,3 +187,12 @@ body {
     border-radius: 16px !important;
   }
 }
+
+/* Footer định vị chuẩn, tuyệt đối không đè nội dung */
+footer, .footer {
+  position: static !important;
+  clear: both !important;
+  margin-top: 3.5rem !important;
+  padding-bottom: 2.5rem !important;
+  background: transparent !important;
+}
