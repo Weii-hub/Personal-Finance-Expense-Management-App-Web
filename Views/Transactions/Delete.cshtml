@@ -1,0 +1,64 @@
+@model PersonalFinanceApp.Models.Transaction
+
+@{
+    ViewData["Title"] = "Xác nhận Xóa Giao Dịch";
+    var isIncome = Model.Category?.Type == 1;
+}
+
+<link rel="stylesheet" href="~/css/transactions.css" asp-append-version="true" />
+
+<div class="container mt-4" style="max-width: 580px;">
+    <div class="transaction-form-card border-danger">
+        <div class="text-center mb-4">
+            <div class="p-3 bg-danger-subtle text-danger rounded-circle d-inline-block mb-3">
+                <i class="fa-solid fa-triangle-exclamation fa-2xl"></i>
+            </div>
+            <h3 class="text-danger fw-bold">Xác nhận xóa giao dịch?</h3>
+            <p class="text-muted">
+                Hành động này không thể hoàn tác. Số dư ví <strong>@(Model.Wallet?.Name)</strong> sẽ được 
+                <strong>@(isIncome ? "trừ lại" : "hoàn trả lại") @Model.Amount.ToString("N0") đ</strong>.
+            </p>
+        </div>
+
+        <div class="card bg-light border-0 rounded-4 p-3 mb-4">
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Danh mục:</span>
+                <span class="fw-bold">@(Model.Category?.Name ?? "Không rõ") (@(isIncome ? "Thu nhập" : "Chi tiêu"))</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Số tiền:</span>
+                <span class="fw-bold @(isIncome ? "text-success" : "text-danger") fs-5">
+                    @(isIncome ? "+" : "-")@Model.Amount.ToString("N0") đ
+                </span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Ví thanh toán:</span>
+                <span class="fw-bold">@(Model.Wallet?.Name ?? "Ví không tên")</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Thời gian:</span>
+                <span>@Model.TransactionDate.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Note))
+            {
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">Ghi chú:</span>
+                    <span>@Model.Note</span>
+                </div>
+            }
+        </div>
+
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div class="d-flex gap-2">
+                <a asp-action="Index" class="btn btn-outline-secondary w-50 btn-lg">
+                    Hủy bỏ
+                </a>
+                <button type="submit" class="btn btn-danger w-50 btn-lg shadow-sm">
+                    <i class="fa-solid fa-trash me-1"></i> Xóa vĩnh viễn
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

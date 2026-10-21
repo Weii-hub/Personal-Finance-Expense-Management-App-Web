@@ -1,0 +1,81 @@
+@model PersonalFinanceApp.Models.Transaction
+
+@{
+    ViewData["Title"] = "Thêm Giao Dịch Mới";
+}
+
+<link rel="stylesheet" href="~/css/transactions.css" asp-append-version="true" />
+
+<div class="container mt-4" style="max-width: 680px;">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="mb-1">✍️ Ghi Chép Giao Dịch</h2>
+            <p class="text-muted mb-0">Thêm khoản thu nhập hoặc chi tiêu vào ví của bạn.</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+
+    <div class="transaction-form-card">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <!-- Số tiền -->
+            <div class="mb-3">
+                <label asp-for="Amount" class="form-label fw-bold">Số tiền (VNĐ) <span class="text-danger">*</span></label>
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-light text-primary fw-bold">₫</span>
+                    <input asp-for="Amount" type="number" min="1" step="1000" class="form-control fw-bold fs-4 text-primary" placeholder="0" autofocus required />
+                </div>
+                <span asp-validation-for="Amount" class="text-danger small"></span>
+            </div>
+
+            <!-- Danh mục -->
+            <div class="mb-3">
+                <label asp-for="CategoryId" class="form-label fw-bold">Danh mục <span class="text-danger">*</span></label>
+                <select asp-for="CategoryId" class="form-select form-select-lg" asp-items="ViewBag.CategoryId" required>
+                    <option value="">-- Chọn danh mục thu / chi --</option>
+                </select>
+                <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                <div class="form-text">Chưa có danh mục bạn cần? <a asp-controller="Categories" asp-action="Create" target="_blank">Tạo thêm danh mục</a></div>
+            </div>
+
+            <!-- Ví tiền -->
+            <div class="mb-3">
+                <label asp-for="WalletId" class="form-label fw-bold">Ví thanh toán <span class="text-danger">*</span></label>
+                <select asp-for="WalletId" class="form-select form-select-lg" asp-items="ViewBag.WalletId" required>
+                    <option value="">-- Chọn ví nhận hoặc trừ tiền --</option>
+                </select>
+                <span asp-validation-for="WalletId" class="text-danger small"></span>
+            </div>
+
+            <!-- Thời gian giao dịch -->
+            <div class="mb-3">
+                <label asp-for="TransactionDate" class="form-label fw-bold">Thời gian giao dịch</label>
+                <input asp-for="TransactionDate" type="datetime-local" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                <span asp-validation-for="TransactionDate" class="text-danger small"></span>
+            </div>
+
+            <!-- Ghi chú -->
+            <div class="mb-4">
+                <label asp-for="Note" class="form-label fw-bold">Ghi chú (Tùy chọn)</label>
+                <input asp-for="Note" class="form-control" placeholder="Ví dụ: Ăn trưa bún bò, Tiền lương tháng 10..." maxlength="255" />
+                <span asp-validation-for="Note" class="text-danger small"></span>
+            </div>
+
+            <!-- Nút bấm -->
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="fa-solid fa-check me-1"></i> Lưu Giao Dịch
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
