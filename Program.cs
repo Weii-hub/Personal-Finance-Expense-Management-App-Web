@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PersonalFinanceApp.Models;
 
@@ -6,9 +7,31 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Register DbContext
+// Register DbContext with Supabase PostgreSQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Cấu hình ASP.NET Core Identity (Issue #14)
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    // Cấu hình mật khẩu linh hoạt cho môi trường đồ án
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequiredLength = 6;
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ExpireTimeSpan = TimeSpan.FromDays(7);
+});
 
 var app = builder.Build();
 
@@ -22,6 +45,8 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 
+// Thứ tự quan trọng: Authentication -> Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
@@ -31,19 +56,21 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-// Tự động khởi tạo dữ liệu mẫu nếu Database còn trống (Issue #10)
+// Tự động khởi tạo dữ liệu mẫu và tài khoản quản trị (Issue #10, #14)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
-        DbInitializer.Initialize(context);
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        await DbInitializer.InitializeAsync(context, userManager, roleManager);
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Lỗi khi tự động khởi tạo dữ liệu mẫu.");
+        logger.LogError(ex, "Lỗi khi tự động khởi tạo dữ liệu và tài khoản mẫu.");
     }
 }
 

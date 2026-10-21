@@ -1,9 +1,12 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PersonalFinanceApp.Models;
 
 namespace PersonalFinanceApp.Controllers
 {
+    [Authorize]
     public class ReportsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -13,11 +16,16 @@ namespace PersonalFinanceApp.Controllers
             _context = context;
         }
 
-        // GET: /Reports
+        private string GetCurrentUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        // GET: /Reports (Phân quyền: Biểu đồ báo cáo riêng của từng User - Issue #15)
         public async Task<IActionResult> Index()
         {
+            var userId = GetCurrentUserId();
+
             var transactions = await _context.Transactions
                 .Include(t => t.Category)
+                .Where(t => t.UserId == userId)
                 .AsNoTracking()
                 .ToListAsync();
 

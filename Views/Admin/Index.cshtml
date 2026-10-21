@@ -1,0 +1,114 @@
+@model IEnumerable<PersonalFinanceApp.Models.ApplicationUser>
+
+@{
+    ViewData["Title"] = "Trang Quản Trị Hệ Thống";
+}
+
+<div class="container mt-4 mb-5">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="fa-solid fa-shield-halved text-danger me-2"></i> Trang Quản Trị (Admin Panel)</h2>
+            <p class="text-muted mb-0">Theo dõi toàn bộ hoạt động hệ thống và quản lý tài khoản người dùng.</p>
+        </div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-house me-1"></i> Về Trang chủ
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] is string msg)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i> @msg
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    <!-- 4 Thẻ chỉ số hệ thống -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-3">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border: 2px solid #e0e7ff !important;">
+                <small class="text-muted text-uppercase fw-bold">Tổng Người Dùng</small>
+                <h3 class="fw-bold text-primary mt-1 mb-0"><i class="fa-solid fa-users me-2"></i>@ViewBag.TotalUsers</h3>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border: 2px solid #e6fcf5 !important;">
+                <small class="text-muted text-uppercase fw-bold">Tổng Ví Khởi Tạo</small>
+                <h3 class="fw-bold text-success mt-1 mb-0"><i class="fa-solid fa-wallet me-2"></i>@ViewBag.TotalWallets</h3>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border: 2px solid #fff3bf !important;">
+                <small class="text-muted text-uppercase fw-bold">Lượt Giao Dịch</small>
+                <h3 class="fw-bold text-warning mt-1 mb-0"><i class="fa-solid fa-receipt me-2"></i>@ViewBag.TotalTransactions</h3>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border: 2px solid #ffe3e3 !important;">
+                <small class="text-muted text-uppercase fw-bold">Danh Mục Hệ Thống</small>
+                <h3 class="fw-bold text-danger mt-1 mb-0"><i class="fa-solid fa-tags me-2"></i>@ViewBag.TotalCategories</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng danh sách người dùng -->
+    <div class="card border-0 rounded-4 shadow-sm p-4" style="border: 2px solid #ffe0d8 !important;">
+        <h5 class="fw-bold mb-3"><i class="fa-solid fa-user-gear me-2 text-primary"></i> Danh Sách Tài Khoản Người Dùng</h5>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Họ và Tên</th>
+                        <th>Email</th>
+                        <th>Ngày Tham Gia</th>
+                        <th>Trạng Thái</th>
+                        <th class="text-end">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        var isLocked = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow;
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">
+                                    <i class="fa-solid fa-circle-user text-secondary me-2"></i>@user.FullName
+                                </div>
+                            </td>
+                            <td><code>@user.Email</code></td>
+                            <td>@user.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @if (isLocked)
+                                {
+                                    <span class="badge bg-danger rounded-pill"><i class="fa-solid fa-lock me-1"></i> Đã bị khóa</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success rounded-pill"><i class="fa-solid fa-circle-check me-1"></i> Hoạt động</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <form asp-action="ToggleLockout" asp-route-id="@user.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    @if (isLocked)
+                                    {
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="fa-solid fa-lock-open me-1"></i> Mở khóa
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn có chắc chắn muốn khóa tài khoản này?');">
+                                            <i class="fa-solid fa-ban me-1"></i> Khóa tài khoản
+                                        </button>
+                                    }
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -12,7 +12,7 @@ namespace PersonalFinanceApp.Models
         public decimal Amount { get; set; }
 
         [Required]
-        public DateTime TransactionDate { get; set; } = DateTime.Now;
+        public DateTime TransactionDate { get; set; } = DateTime.UtcNow;
 
         [StringLength(255)]
         public string? Note { get; set; }
@@ -28,5 +28,10 @@ namespace PersonalFinanceApp.Models
         public int CategoryId { get; set; }
         [ForeignKey("CategoryId")]
         public Category? Category { get; set; }
+
+        // Khóa ngoại liên kết tới người dùng thực hiện giao dịch (Issue #15)
+        public string? UserId { get; set; }
+        [ForeignKey("UserId")]
+        public ApplicationUser? User { get; set; }
     }
 }

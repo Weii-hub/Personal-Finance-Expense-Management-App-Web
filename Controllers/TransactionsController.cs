@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -5,6 +7,7 @@ using PersonalFinanceApp.Models;
 
 namespace PersonalFinanceApp.Controllers
 {
+    [Authorize]
     public class TransactionsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -14,12 +17,17 @@ namespace PersonalFinanceApp.Controllers
             _context = context;
         }
 
-        // GET: Transactions
+        private string GetCurrentUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        // GET: Transactions (Phân quyền: Chỉ lấy giao dịch của chính người dùng - Issue #15)
         public async Task<IActionResult> Index(int? walletId, int? categoryId, int? type, DateTime? fromDate, DateTime? toDate)
         {
+            var userId = GetCurrentUserId();
+
             var query = _context.Transactions
                 .Include(t => t.Wallet)
                 .Include(t => t.Category)
+                .Where(t => t.UserId == userId)
                 .AsQueryable();
 
             if (walletId.HasValue && walletId.Value > 0)
@@ -61,8 +69,8 @@ namespace PersonalFinanceApp.Controllers
             ViewBag.TotalExpense = totalExpense;
             ViewBag.NetBalance = totalIncome - totalExpense;
 
-            // Dữ liệu cho bộ lọc
-            ViewBag.Wallets = await _context.Wallets.OrderBy(w => w.Name).ToListAsync();
+            // Dữ liệu cho bộ lọc (Chỉ lấy ví của chính user)
+            ViewBag.Wallets = await _context.Wallets.Where(w => w.UserId == userId).OrderBy(w => w.Name).ToListAsync();
             ViewBag.Categories = await _context.Categories.OrderBy(c => c.Type).ThenBy(c => c.Name).ToListAsync();
             ViewBag.SelectedWalletId = walletId;
             ViewBag.SelectedCategoryId = categoryId;
@@ -85,16 +93,17 @@ namespace PersonalFinanceApp.Controllers
             return View(model);
         }
 
-        // POST: Transactions/Create (Xử lý Issue #5 & Issue #6: Tự động cộng/trừ số dư ví)
+        // POST: Transactions/Create (Gắn UserId vào giao dịch - Issue #15)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Transaction transaction)
         {
-            var wallet = await _context.Wallets.FindAsync(transaction.WalletId);
+            var userId = GetCurrentUserId();
+            var wallet = await _context.Wallets.FirstOrDefaultAsync(w => w.Id == transaction.WalletId && w.UserId == userId);
             var category = await _context.Categories.FindAsync(transaction.CategoryId);
 
             if (wallet == null)
-                ModelState.AddModelError("WalletId", "Ví tiền không tồn tại.");
+                ModelState.AddModelError("WalletId", "Ví tiền không tồn tại hoặc không thuộc quyền sở hữu của bạn.");
 
             if (category == null)
                 ModelState.AddModelError("CategoryId", "Danh mục không tồn tại.");
@@ -105,17 +114,14 @@ namespace PersonalFinanceApp.Controllers
                 return View(transaction);
             }
 
-            // Issue #6 Logic: Cập nhật số dư ví theo loại danh mục
-            if (category!.Type == 1) // Thu nhập (Income)
-            {
-                wallet!.InitialBalance += transaction.Amount;
-            }
-            else // Chi tiêu (Expense)
-            {
-                wallet!.InitialBalance -= transaction.Amount;
-            }
+            transaction.UserId = userId;
 
-            // Đảm bảo TransactionDate được lưu chuẩn theo UTC/Local
+            // Logic cập nhật số dư ví
+            if (category!.Type == 1)
+                wallet!.InitialBalance += transaction.Amount;
+            else
+                wallet!.InitialBalance -= transaction.Amount;
+
             if (transaction.TransactionDate.Kind == DateTimeKind.Unspecified)
             {
                 transaction.TransactionDate = DateTime.SpecifyKind(transaction.TransactionDate, DateTimeKind.Utc);
@@ -133,28 +139,30 @@ namespace PersonalFinanceApp.Controllers
         {
             if (id == null) return NotFound();
 
-            var transaction = await _context.Transactions.FindAsync(id);
+            var userId = GetCurrentUserId();
+            var transaction = await _context.Transactions.FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
             if (transaction == null) return NotFound();
 
             await PopulateSelectListsAsync(transaction.WalletId, transaction.CategoryId);
             return View(transaction);
         }
 
-        // POST: Transactions/Edit/5 (Xử lý Issue #6: Hoàn số dư ví cũ và cập nhật ví mới)
+        // POST: Transactions/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Transaction transaction)
         {
             if (id != transaction.Id) return NotFound();
 
+            var userId = GetCurrentUserId();
             var existingTransaction = await _context.Transactions
                 .Include(t => t.Category)
                 .Include(t => t.Wallet)
-                .FirstOrDefaultAsync(t => t.Id == id);
+                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
             if (existingTransaction == null) return NotFound();
 
-            var newWallet = await _context.Wallets.FindAsync(transaction.WalletId);
+            var newWallet = await _context.Wallets.FirstOrDefaultAsync(w => w.Id == transaction.WalletId && w.UserId == userId);
             var newCategory = await _context.Categories.FindAsync(transaction.CategoryId);
 
             if (newWallet == null)
@@ -168,25 +176,24 @@ namespace PersonalFinanceApp.Controllers
                 return View(transaction);
             }
 
-            // 1. Hoàn lại số dư ví cũ
+            // Hoàn số dư ví cũ
             var oldWallet = existingTransaction.Wallet;
             var oldCategory = existingTransaction.Category;
 
             if (oldWallet != null && oldCategory != null)
             {
-                if (oldCategory.Type == 1) // Hoàn lại khoản thu: trừ lại
+                if (oldCategory.Type == 1)
                     oldWallet.InitialBalance -= existingTransaction.Amount;
-                else // Hoàn lại khoản chi: cộng lại
+                else
                     oldWallet.InitialBalance += existingTransaction.Amount;
             }
 
-            // 2. Áp dụng số tiền mới vào ví mới
+            // Cập nhật số dư ví mới
             if (newCategory!.Type == 1)
                 newWallet!.InitialBalance += transaction.Amount;
             else
                 newWallet!.InitialBalance -= transaction.Amount;
 
-            // 3. Cập nhật các trường dữ liệu
             existingTransaction.Amount = transaction.Amount;
             existingTransaction.TransactionDate = transaction.TransactionDate.Kind == DateTimeKind.Unspecified
                 ? DateTime.SpecifyKind(transaction.TransactionDate, DateTimeKind.Utc)
@@ -206,35 +213,36 @@ namespace PersonalFinanceApp.Controllers
         {
             if (id == null) return NotFound();
 
+            var userId = GetCurrentUserId();
             var transaction = await _context.Transactions
                 .Include(t => t.Wallet)
                 .Include(t => t.Category)
-                .FirstOrDefaultAsync(t => t.Id == id);
+                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
             if (transaction == null) return NotFound();
 
             return View(transaction);
         }
 
-        // POST: Transactions/Delete/5 (Xử lý Issue #6: Hoàn trả số dư ví khi xóa)
+        // POST: Transactions/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            var userId = GetCurrentUserId();
             var transaction = await _context.Transactions
                 .Include(t => t.Wallet)
                 .Include(t => t.Category)
-                .FirstOrDefaultAsync(t => t.Id == id);
+                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
             if (transaction != null)
             {
-                // Hoàn lại số dư ví trước khi xóa giao dịch
                 if (transaction.Wallet != null && transaction.Category != null)
                 {
                     if (transaction.Category.Type == 1)
-                        transaction.Wallet.InitialBalance -= transaction.Amount; // Xóa khoản thu -> trừ bớt
+                        transaction.Wallet.InitialBalance -= transaction.Amount;
                     else
-                        transaction.Wallet.InitialBalance += transaction.Amount; // Xóa khoản chi -> hoàn tiền
+                        transaction.Wallet.InitialBalance += transaction.Amount;
                 }
 
                 _context.Transactions.Remove(transaction);
@@ -247,7 +255,9 @@ namespace PersonalFinanceApp.Controllers
 
         private async Task PopulateSelectListsAsync(int? selectedWalletId = null, int? selectedCategoryId = null)
         {
+            var userId = GetCurrentUserId();
             var wallets = await _context.Wallets
+                .Where(w => w.UserId == userId)
                 .OrderBy(w => w.Name)
                 .Select(w => new { w.Id, Display = $"{w.Name} (Số dư: {w.InitialBalance:N0} đ)" })
                 .ToListAsync();

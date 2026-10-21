@@ -51,20 +51,47 @@
                                 <i class="fa-solid fa-chart-pie me-1"></i> Biểu đồ
                             </a>
                         </li>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link fw-bold text-dark bg-warning-subtle shadow-sm" asp-controller="Admin" asp-action="Index">
+                                    <i class="fa-solid fa-shield-halved me-1 text-danger"></i> Quản Trị (Admin)
+                                </a>
+                            </li>
+                        }
                     </ul>
 
-                    <!-- Phía bên phải: Đăng nhập & Đăng ký (Issue #13) -->
+                    <!-- Phía bên phải: Đăng nhập / Đăng xuất (Issue #14) -->
                     <ul class="navbar-nav align-items-lg-center">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Account" asp-action="Login">
-                                <i class="fa-solid fa-right-to-bracket me-1"></i> Đăng nhập
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link fw-bold bg-white text-dark shadow-sm" asp-controller="Account" asp-action="Register">
-                                <i class="fa-solid fa-user-plus me-1 text-primary"></i> Đăng ký
-                            </a>
-                        </li>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item me-2 mb-2 mb-lg-0">
+                                <span class="nav-link text-white fw-bold bg-white bg-opacity-25 rounded-pill px-3 py-1">
+                                    <i class="fa-solid fa-circle-user me-1 text-warning"></i> @User.Identity.Name
+                                </span>
+                            </li>
+                            <li class="nav-item">
+                                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                                        <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Đăng xuất
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Account" asp-action="Login">
+                                    <i class="fa-solid fa-right-to-bracket me-1"></i> Đăng nhập
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link fw-bold bg-white text-dark shadow-sm rounded-pill" asp-controller="Account" asp-action="Register">
+                                    <i class="fa-solid fa-user-plus me-1 text-primary"></i> Đăng ký
+                                </a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>

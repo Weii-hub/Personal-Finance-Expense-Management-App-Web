@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PersonalFinanceApp.Models
 {
@@ -14,6 +15,11 @@ namespace PersonalFinanceApp.Models
         public decimal InitialBalance { get; set; } = 0;
 
         public string Icon { get; set; } = "fa-wallet"; // Icon mặc định
+
+        // Khóa ngoại liên kết tới tài khoản người dùng sở hữu ví (Issue #15)
+        public string? UserId { get; set; }
+        [ForeignKey("UserId")]
+        public ApplicationUser? User { get; set; }
 
         // Navigation property (Một ví có nhiều giao dịch)
         public ICollection<Transaction>? Transactions { get; set; }
