@@ -8,6 +8,7 @@ body {
   font-family: 'Quicksand', sans-serif;
   background-color: #fff9e6; /* Màu nền vàng pastel nhẹ nhàng */
   color: #594a4e; /* Màu chữ nâu đen mượt mắt */
+  overflow-x: hidden;
 }
 
 /* Nút bấm phong cách hoạt hình (có đổ bóng cứng 3D) */
@@ -69,7 +70,8 @@ body {
 }
 
 /* Khung nội dung chính */
-.container.mt-4 {
+.container.mt-4,
+.container.mt-3 {
   background-color: white;
   border-radius: 30px;
   padding: 30px;
@@ -86,7 +88,7 @@ body {
 .navbar-brand {
   color: white !important;
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
 }
 .nav-link {
@@ -94,8 +96,9 @@ body {
   font-weight: 600;
   background-color: rgba(255,255,255,0.2);
   border-radius: 15px;
-  margin: 0 5px;
-  padding: 8px 15px !important;
+  margin: 0 4px;
+  padding: 8px 14px !important;
+  transition: all 0.2s ease;
 }
 .nav-link:hover {
   background-color: white;
@@ -103,12 +106,84 @@ body {
 }
 
 /* Input Form */
-.form-control {
+.form-control, .form-select {
   border-radius: 15px;
   border: 2px solid #ffd3b6;
   padding: 10px 15px;
 }
-.form-control:focus {
+.form-control:focus, .form-select:focus {
   border-color: #ffaaa5;
   box-shadow: 0 0 0 0.25rem rgba(255, 170, 165, 0.25);
+}
+
+/* ======================================================== */
+/* 📱 ISSUE #9: RESPONSIVE OPTIMIZATIONS CHO ĐIỆN THOẠI      */
+/* ======================================================== */
+@media (max-width: 991.98px) {
+  .navbar-nav {
+    padding-top: 10px;
+  }
+  .navbar-nav .nav-item {
+    margin-bottom: 6px;
+  }
+  .navbar-nav .nav-link {
+    margin: 2px 0;
+    text-align: left;
+  }
+}
+
+@media (max-width: 767.98px) {
+  html {
+    font-size: 14.5px;
+  }
+
+  .container.mt-4,
+  .container.mt-3 {
+    padding: 16px;
+    border-radius: 20px;
+    border-width: 2px;
+  }
+
+  .hero-banner {
+    padding: 24px 16px !important;
+  }
+
+  .hero-banner h1 {
+    font-size: 1.8rem !important;
+  }
+
+  .btn {
+    padding: 7px 14px;
+    font-size: 0.95rem;
+  }
+
+  .btn-lg {
+    padding: 10px 18px;
+    font-size: 1.05rem;
+  }
+
+  /* Cuộn ngang mượt cho bảng trên màn hình bé */
+  .table-responsive {
+    border-radius: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table td, .table th {
+    white-space: nowrap;
+    padding: 10px 8px;
+  }
+
+  /* Form controls trên mobile */
+  .input-group-lg > .form-control,
+  .form-select-lg {
+    font-size: 1.15rem;
+  }
+
+  /* Cards trên mobile */
+  .transaction-summary-card,
+  .category-panel,
+  .transaction-panel {
+    padding: 1rem !important;
+    border-radius: 16px !important;
+  }
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -15,46 +15,80 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-lg navbar-light border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">PersonalFinanceApp</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                    <span class="me-2">🧸</span> Bé Quản Gia
+                </a>
+                <button class="navbar-toggler border-0 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar"
+                        aria-expanded="false" aria-label="Toggle navigation" style="background-color: rgba(255,255,255,0.3);">
+                    <i class="fa-solid fa-bars"></i>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <div class="navbar-collapse collapse justify-content-between" id="mainNavbar">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="fa-solid fa-house me-1"></i> Trang chủ
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link fw-bold" asp-area="" asp-controller="Wallets" asp-action="Index">
+                                <i class="fa-solid fa-wallet me-1"></i> Quản lý Ví
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark fw-bold" asp-area="" asp-controller="Wallets" asp-action="Index">💳 Quản lý Ví</a>
+                            <a class="nav-link fw-bold" asp-area="" asp-controller="Categories" asp-action="Index">
+                                <i class="fa-solid fa-tags me-1"></i> Danh mục
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark fw-bold" asp-area="" asp-controller="Categories" asp-action="Index">🏷️ Danh mục</a>
+                            <a class="nav-link fw-bold" asp-area="" asp-controller="Transactions" asp-action="Index">
+                                <i class="fa-solid fa-receipt me-1"></i> Giao dịch
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark fw-bold" asp-area="" asp-controller="Transactions" asp-action="Index">💸 Giao dịch</a>
+                            <a class="nav-link fw-bold" asp-area="" asp-controller="Reports" asp-action="Index">
+                                <i class="fa-solid fa-chart-pie me-1"></i> Biểu đồ
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!-- Phía bên phải: Đăng nhập & Đăng ký (Issue #13) -->
+                    <ul class="navbar-nav align-items-lg-center">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Account" asp-action="Login">
+                                <i class="fa-solid fa-right-to-bracket me-1"></i> Đăng nhập
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-bold bg-white text-dark shadow-sm" asp-controller="Account" asp-action="Register">
+                                <i class="fa-solid fa-user-plus me-1 text-primary"></i> Đăng ký
+                            </a>
                         </li>
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - PersonalFinanceApp - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="footer text-muted mt-5 py-4 text-center">
+        <div class="container border-0 shadow-none bg-transparent">
+            <p class="mb-1 text-muted">
+                Made with <i class="fa-solid fa-heart text-danger"></i> by <strong>Nhóm 12</strong> &bull; Đề tài Quản lý Chi tiêu Cá nhân
+            </p>
+            <small class="text-secondary">
+                &copy; 2026 - Bé Quản Gia - 
+                <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-decoration-none text-muted">Chính sách & Quyền riêng tư</a>
+            </small>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

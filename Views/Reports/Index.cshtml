@@ -1,0 +1,189 @@
+@{
+    ViewData["Title"] = "Báo Cáo & Biểu Đồ Tài Chính";
+    var expenseCategories = System.Text.Json.JsonSerializer.Serialize(ViewBag.ExpenseCategories ?? new string[0]);
+    var expenseAmounts = System.Text.Json.JsonSerializer.Serialize(ViewBag.ExpenseAmounts ?? new decimal[0]);
+    var expenseColors = System.Text.Json.JsonSerializer.Serialize(ViewBag.ExpenseColors ?? new string[0]);
+
+    var monthlyLabels = System.Text.Json.JsonSerializer.Serialize(ViewBag.MonthlyLabels ?? new string[0]);
+    var monthlyIncomes = System.Text.Json.JsonSerializer.Serialize(ViewBag.MonthlyIncomes ?? new decimal[0]);
+    var monthlyExpenses = System.Text.Json.JsonSerializer.Serialize(ViewBag.MonthlyExpenses ?? new decimal[0]);
+
+    decimal totalIncome = ViewBag.TotalAllTimeIncome ?? 0m;
+    decimal totalExpense = ViewBag.TotalAllTimeExpense ?? 0m;
+    string topCategory = ViewBag.TopExpenseCategory ?? "Chưa có";
+}
+
+<div class="container mt-4 mb-5">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="mb-1">📊 Báo Cáo & Biểu Đồ</h2>
+            <p class="text-muted mb-0">Trực quan hóa cơ cấu chi tiêu và xu hướng dòng tiền của bạn qua các tháng.</p>
+        </div>
+        <a asp-controller="Transactions" asp-action="Create" class="btn btn-primary">
+            <i class="fa-solid fa-plus me-1"></i> Ghi chép mới
+        </a>
+    </div>
+
+    <!-- 3 Thẻ tóm tắt nhanh -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border-top: 4px solid #20c997 !important; border: 2px solid #e6fcf5;">
+                <small class="text-muted text-uppercase fw-bold">Tổng Thu Tích Lũy</small>
+                <h4 class="fw-bold text-success mt-1 mb-0">+@totalIncome.ToString("N0") đ</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border-top: 4px solid #ff6b81 !important; border: 2px solid #ffe3e3;">
+                <small class="text-muted text-uppercase fw-bold">Tổng Chi Tích Lũy</small>
+                <h4 class="fw-bold text-danger mt-1 mb-0">-@totalExpense.ToString("N0") đ</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border-top: 4px solid #f59f00 !important; border: 2px solid #fff3bf;">
+                <small class="text-muted text-uppercase fw-bold">Khoản Chi Nhiều Nhất</small>
+                <h4 class="fw-bold text-dark mt-1 mb-0">🏷️ @topCategory</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2 Biểu đồ Chart.js -->
+    <div class="row g-4">
+        <!-- Biểu đồ Tròn: Cơ cấu chi tiêu -->
+        <div class="col-lg-5">
+            <div class="card border-0 rounded-4 shadow-sm p-4 h-100" style="border: 2px solid #ffe0d8 !important;">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-pie me-2 text-primary"></i> Tỷ Lệ Chi Tiêu Theo Danh Mục</h5>
+                <div class="chart-container position-relative d-flex justify-content-center align-items-center" style="min-height: 320px;">
+                    <canvas id="expenseCategoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Biểu đồ Cột: So sánh Thu vs Chi theo tháng -->
+        <div class="col-lg-7">
+            <div class="card border-0 rounded-4 shadow-sm p-4 h-100" style="border: 2px solid #ffe0d8 !important;">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-chart-column me-2 text-success"></i> So Sánh Thu Nhập & Chi Tiêu (6 Tháng)</h5>
+                <div class="chart-container position-relative" style="min-height: 320px;">
+                    <canvas id="monthlyComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tích hợp Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // 1. Biểu đồ tròn: Chi tiêu theo danh mục
+        const catLabels = @Html.Raw(expenseCategories);
+        const catAmounts = @Html.Raw(expenseAmounts);
+        const catColors = @Html.Raw(expenseColors);
+
+        const ctxPie = document.getElementById('expenseCategoryChart').getContext('2d');
+        if (catLabels.length === 0 || catAmounts.reduce((a, b) => a + b, 0) === 0) {
+            ctxPie.font = "16px Quicksand, sans-serif";
+            ctxPie.fillStyle = "#888";
+            ctxPie.textAlign = "center";
+            ctxPie.fillText("Chưa có dữ liệu chi tiêu để vẽ biểu đồ", 150, 150);
+        } else {
+            new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        data: catAmounts,
+                        backgroundColor: catColors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { family: 'Quicksand', size: 13 },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const value = context.parsed || 0;
+                                    return ` ${context.label}: ${value.toLocaleString('vi-VN')} đ`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Biểu đồ cột: So sánh Thu - Chi theo 6 tháng
+        const mLabels = @Html.Raw(monthlyLabels);
+        const mIncomes = @Html.Raw(monthlyIncomes);
+        const mExpenses = @Html.Raw(monthlyExpenses);
+
+        const ctxBar = document.getElementById('monthlyComparisonChart').getContext('2d');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: mLabels,
+                datasets: [
+                    {
+                        label: 'Thu nhập',
+                        data: mIncomes,
+                        backgroundColor: '#20c997',
+                        borderRadius: 8,
+                        maxBarThickness: 32
+                    },
+                    {
+                        label: 'Chi tiêu',
+                        data: mExpenses,
+                        backgroundColor: '#ff6b81',
+                        borderRadius: 8,
+                        maxBarThickness: 32
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { family: 'Quicksand', size: 13 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return ` ${context.dataset.label}: ${(context.parsed.y || 0).toLocaleString('vi-VN')} đ`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (val) {
+                                return val >= 1000000 ? (val / 1000000) + ' Tr' : (val >= 1000 ? (val / 1000) + ' k' : val);
+                            },
+                            font: { family: 'Quicksand' }
+                        },
+                        grid: { color: '#f1f3f5' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Quicksand' } }
+                    }
+                }
+            }
+        });
+    });
+</script>
