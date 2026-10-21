@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700;800&display=swap');
 
 html {
   font-size: 16px;
@@ -7,7 +7,7 @@ html {
 body {
   font-family: 'Quicksand', sans-serif;
   background-color: #fff9e6; /* Màu nền vàng pastel nhẹ nhàng */
-  color: #594a4e; /* Màu chữ nâu đen mượt mắt */
+  color: #4a3e3d; /* Màu chữ nâu đen mượt mắt */
   overflow-x: hidden;
 }
 
@@ -17,35 +17,35 @@ body {
   font-weight: 700;
   border: none;
   box-shadow: 0 4px 0 rgba(0,0,0,0.1);
-  transition: all 0.1s;
+  transition: all 0.15s ease;
   padding: 8px 20px;
 }
 
 .btn:active {
-  transform: translateY(4px);
+  transform: translateY(3px);
   box-shadow: none;
 }
 
 .btn-primary {
-  background-color: #ff9fb2; /* Hồng pastel */
+  background-color: #ff8fa3; /* Hồng pastel đậm đà hơn chút để nét hơn */
   color: white;
-  box-shadow: 0 4px 0 #e57d90;
+  box-shadow: 0 4px 0 #e57373;
 }
 
 .btn-primary:hover, .btn-primary:focus {
-  background-color: #ff859d;
+  background-color: #ff758f;
   color: white;
 }
 
 .btn-success {
-  background-color: #a8e6cf; /* Xanh lá pastel */
-  color: #3b5c4f;
-  box-shadow: 0 4px 0 #8ad0b6;
+  background-color: #20c997; /* Xanh mint tươi */
+  color: white;
+  box-shadow: 0 4px 0 #0ca678;
 }
 
 .btn-success:hover {
-  background-color: #92d8be;
-  color: #3b5c4f;
+  background-color: #12b886;
+  color: white;
 }
 
 /* Tùy chỉnh bảng (Table) */
@@ -59,9 +59,10 @@ body {
 
 .table thead th {
   background-color: #ffd3b6 !important; /* Cam đào pastel */
-  color: #594a4e;
+  color: #4a3e3d;
   border-bottom: none;
   text-align: center;
+  font-weight: 700;
 }
 
 .table td {
@@ -79,30 +80,68 @@ body {
   border: 3px solid #ffaaa5; /* Viền khung cute */
 }
 
-/* Thanh điều hướng Navbar */
+/* ======================================================== */
+/* 🌟 THANH ĐIỀU HƯỚNG NAVBAR - NỔI BẬT, SẮC NÉT, ĐẬM MÀU  */
+/* ======================================================== */
 .navbar {
-  background-color: #ffaaa5 !important;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-  padding: 15px 20px;
+  background: linear-gradient(135deg, #ff9aa2 0%, #ff8093 100%) !important;
+  box-shadow: 0 6px 16px rgba(255, 128, 147, 0.3);
+  padding: 12px 20px;
 }
+
 .navbar-brand {
-  color: white !important;
-  font-weight: 700;
-  font-size: 1.4rem;
-  text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+  color: #ffffff !important;
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.5px;
+  text-shadow: 1px 2px 3px rgba(89, 74, 78, 0.3);
 }
+
+/* Thẻ menu điều hướng dạng viên thuốc trắng nổi bật */
 .nav-link {
-  color: white !important;
-  font-weight: 600;
-  background-color: rgba(255,255,255,0.2);
-  border-radius: 15px;
+  color: #4a3e3d !important; /* Chữ nâu trầm cực kỳ sắc nét */
+  font-weight: 700;
+  background-color: #ffffff;
+  border-radius: 20px;
   margin: 0 4px;
-  padding: 8px 14px !important;
+  padding: 7px 16px !important;
+  box-shadow: 0 3px 6px rgba(89, 74, 78, 0.1);
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
 }
-.nav-link:hover {
-  background-color: white;
-  color: #ffaaa5 !important;
+
+.nav-link:hover, .nav-link:focus {
+  background-color: #fff0f3;
+  color: #e64980 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(89, 74, 78, 0.15);
+}
+
+/* Nút Admin đặc biệt */
+.nav-link.admin-pill {
+  background-color: #fff3bf !important;
+  color: #d9480f !important;
+  border: 1px solid #ffe066;
+}
+
+/* Badge tài khoản người dùng */
+.nav-link.user-badge {
+  background-color: #e7f5ff !important;
+  color: #1971c2 !important;
+  border: 1px solid #a5d8ff;
+}
+
+/* Nút Đăng ký nổi bật */
+.nav-link.register-btn {
+  background-color: #ffffff !important;
+  color: #ff6b81 !important;
+  border: 2px solid #ffccd5;
+}
+
+.nav-link.register-btn:hover {
+  background-color: #ff6b81 !important;
+  color: #ffffff !important;
 }
 
 /* Input Form */
@@ -110,14 +149,24 @@ body {
   border-radius: 15px;
   border: 2px solid #ffd3b6;
   padding: 10px 15px;
+  color: #4a3e3d;
 }
 .form-control:focus, .form-select:focus {
-  border-color: #ffaaa5;
-  box-shadow: 0 0 0 0.25rem rgba(255, 170, 165, 0.25);
+  border-color: #ff859d;
+  box-shadow: 0 0 0 0.25rem rgba(255, 133, 157, 0.25);
+}
+
+/* Footer an toàn không bao giờ đè nội dung */
+footer, .footer {
+  position: static !important;
+  clear: both !important;
+  margin-top: 3.5rem !important;
+  padding-bottom: 2.5rem !important;
+  background: transparent !important;
 }
 
 /* ======================================================== */
-/* 📱 ISSUE #9: RESPONSIVE OPTIMIZATIONS CHO ĐIỆN THOẠI      */
+/* 📱 RESPONSIVE CHO ĐIỆN THOẠI                            */
 /* ======================================================== */
 @media (max-width: 991.98px) {
   .navbar-nav {
@@ -128,7 +177,7 @@ body {
   }
   .navbar-nav .nav-link {
     margin: 2px 0;
-    text-align: left;
+    justify-content: flex-start;
   }
 }
 
@@ -162,7 +211,6 @@ body {
     font-size: 1.05rem;
   }
 
-  /* Cuộn ngang mượt cho bảng trên màn hình bé */
   .table-responsive {
     border-radius: 16px;
     -webkit-overflow-scrolling: touch;
@@ -173,26 +221,10 @@ body {
     padding: 10px 8px;
   }
 
-  /* Form controls trên mobile */
-  .input-group-lg > .form-control,
-  .form-select-lg {
-    font-size: 1.15rem;
-  }
-
-  /* Cards trên mobile */
   .transaction-summary-card,
   .category-panel,
   .transaction-panel {
     padding: 1rem !important;
     border-radius: 16px !important;
   }
-}
-
-/* Footer định vị chuẩn, tuyệt đối không đè nội dung */
-footer, .footer {
-  position: static !important;
-  clear: both !important;
-  margin-top: 3.5rem !important;
-  padding-bottom: 2.5rem !important;
-  background: transparent !important;
 }

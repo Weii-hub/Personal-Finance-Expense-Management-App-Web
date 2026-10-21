@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="~/PersonalFinanceApp.styles.css" asp-append-version="true" />
     <!-- FontAwesome cho icon cute -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- SweetAlert2 cho thông báo popup hiện đại trên Chrome -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <header>
@@ -21,40 +23,40 @@
                     <span class="me-2">🧸</span> Bé Quản Gia
                 </a>
                 <button class="navbar-toggler border-0 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar"
-                        aria-expanded="false" aria-label="Toggle navigation" style="background-color: rgba(255,255,255,0.3);">
-                    <i class="fa-solid fa-bars"></i>
+                        aria-expanded="false" aria-label="Toggle navigation" style="background-color: rgba(255,255,255,0.35);">
+                    <i class="fa-solid fa-bars text-white"></i>
                 </button>
                 <div class="navbar-collapse collapse justify-content-between" id="mainNavbar">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
-                                <i class="fa-solid fa-house me-1"></i> Trang chủ
+                                <i class="fa-solid fa-house me-1 text-primary"></i> Trang chủ
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link fw-bold" asp-area="" asp-controller="Wallets" asp-action="Index">
-                                <i class="fa-solid fa-wallet me-1"></i> Quản lý Ví
+                            <a class="nav-link" asp-area="" asp-controller="Wallets" asp-action="Index">
+                                <i class="fa-solid fa-wallet me-1 text-success"></i> Quản lý Ví
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link fw-bold" asp-area="" asp-controller="Categories" asp-action="Index">
-                                <i class="fa-solid fa-tags me-1"></i> Danh mục
+                            <a class="nav-link" asp-area="" asp-controller="Categories" asp-action="Index">
+                                <i class="fa-solid fa-tags me-1 text-warning"></i> Danh mục
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link fw-bold" asp-area="" asp-controller="Transactions" asp-action="Index">
-                                <i class="fa-solid fa-receipt me-1"></i> Giao dịch
+                            <a class="nav-link" asp-area="" asp-controller="Transactions" asp-action="Index">
+                                <i class="fa-solid fa-receipt me-1 text-danger"></i> Giao dịch
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link fw-bold" asp-area="" asp-controller="Reports" asp-action="Index">
-                                <i class="fa-solid fa-chart-pie me-1"></i> Biểu đồ
+                            <a class="nav-link" asp-area="" asp-controller="Reports" asp-action="Index">
+                                <i class="fa-solid fa-chart-pie me-1 text-info"></i> Biểu đồ
                             </a>
                         </li>
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link fw-bold text-dark bg-warning-subtle shadow-sm" asp-controller="Admin" asp-action="Index">
+                                <a class="nav-link admin-pill" asp-controller="Admin" asp-action="Index">
                                     <i class="fa-solid fa-shield-halved me-1 text-danger"></i> Quản Trị (Admin)
                                 </a>
                             </li>
@@ -66,14 +68,14 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item me-2 mb-2 mb-lg-0">
-                                <span class="nav-link text-white fw-bold bg-white bg-opacity-25 rounded-pill px-3 py-1">
-                                    <i class="fa-solid fa-circle-user me-1 text-warning"></i> @User.Identity.Name
+                                <span class="nav-link user-badge">
+                                    <i class="fa-solid fa-circle-user me-1 text-primary"></i> @User.Identity.Name
                                 </span>
                             </li>
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-light rounded-pill px-3">
+                                    <button type="submit" class="btn btn-sm btn-outline-light rounded-pill px-3 shadow-sm">
                                         <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Đăng xuất
                                     </button>
                                 </form>
@@ -81,14 +83,14 @@
                         }
                         else
                         {
-                            <li class="nav-item">
+                            <li class="nav-item me-2">
                                 <a class="nav-link" asp-controller="Account" asp-action="Login">
-                                    <i class="fa-solid fa-right-to-bracket me-1"></i> Đăng nhập
+                                    <i class="fa-solid fa-right-to-bracket me-1 text-primary"></i> Đăng nhập
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link fw-bold bg-white text-dark shadow-sm rounded-pill" asp-controller="Account" asp-action="Register">
-                                    <i class="fa-solid fa-user-plus me-1 text-primary"></i> Đăng ký
+                                <a class="nav-link register-btn" asp-controller="Account" asp-action="Register">
+                                    <i class="fa-solid fa-user-plus me-1 text-danger"></i> Đăng ký
                                 </a>
                             </li>
                         }

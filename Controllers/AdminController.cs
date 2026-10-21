@@ -44,15 +44,19 @@ namespace PersonalFinanceApp.Controllers
 
             if (await _userManager.IsLockedOutAsync(user))
             {
-                // Mở khóa
+                // Mở khóa tài khoản
                 await _userManager.SetLockoutEndDateAsync(user, null);
-                TempData["SuccessMessage"] = $"Đã mở khóa tài khoản {user.Email} thành công!";
+                await _userManager.UpdateSecurityStampAsync(user);
+                TempData["SuccessMessage"] = $"Đã mở khóa tài khoản {user.Email} ({user.FullName}) thành công!";
             }
             else
             {
-                // Khóa tài khoản 100 năm
+                // Khóa tài khoản
+                await _userManager.SetLockoutEnabledAsync(user, true);
                 await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
-                TempData["SuccessMessage"] = $"Đã khóa tài khoản {user.Email}!";
+                // Cập nhật SecurityStamp để hủy session đăng nhập ngay lập tức
+                await _userManager.UpdateSecurityStampAsync(user);
+                TempData["SuccessMessage"] = $"Đã khóa tài khoản {user.Email} ({user.FullName})!";
             }
 
             return RedirectToAction(nameof(Index));

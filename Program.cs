@@ -49,6 +49,27 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Middleware kiểm tra tài khoản đang thao tác có bị Admin khóa hay không
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "";
+    if (context.User.Identity?.IsAuthenticated == true &&
+        !path.StartsWith("/Account/Logout", StringComparison.OrdinalIgnoreCase) &&
+        !path.StartsWith("/Account/Login", StringComparison.OrdinalIgnoreCase))
+    {
+        var userManager = context.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await userManager.GetUserAsync(context.User);
+        if (user != null && await userManager.IsLockedOutAsync(user))
+        {
+            var signInManager = context.RequestServices.GetRequiredService<SignInManager<ApplicationUser>>();
+            await signInManager.SignOutAsync();
+            context.Response.Redirect("/Account/Login?locked=1");
+            return;
+        }
+    }
+    await next();
+});
+
 app.MapStaticAssets();
 
 app.MapControllerRoute(

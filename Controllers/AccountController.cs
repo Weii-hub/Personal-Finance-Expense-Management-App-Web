@@ -22,9 +22,14 @@ namespace PersonalFinanceApp.Controllers
         }
 
         // GET: /Account/Login
-        public IActionResult Login(string? returnUrl = null)
+        public IActionResult Login(string? returnUrl = null, string? locked = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
+            if (locked == "1")
+            {
+                ViewBag.IsLockedOut = true;
+                ViewBag.LockoutMessage = "🚫 TÀI KHOẢN CỦA BẠN ĐÃ BỊ KHÓA! Quản trị viên đã tạm thời khóa quyền truy cập của tài khoản này. Vui lòng liên hệ Admin để được hỗ trợ mở khóa.";
+            }
             return View(new LoginViewModel());
         }
 
@@ -39,15 +44,45 @@ namespace PersonalFinanceApp.Controllers
                 return View(model);
             }
 
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user != null)
+            {
+                // Kiểm tra trực tiếp xem tài khoản có đang bị khóa bởi Admin hay không
+                if (await _userManager.IsLockedOutAsync(user))
+                {
+                    ViewBag.IsLockedOut = true;
+                    ViewBag.LockoutMessage = $"🚫 TÀI KHOẢN ({user.Email}) ĐÃ BỊ KHÓA! Quản trị viên đã tạm thời khóa quyền truy cập. Vui lòng liên hệ Admin để được hỗ trợ mở khóa.";
+                    ModelState.AddModelError(string.Empty, "🚫 Tài khoản của bạn hiện đang bị Quản trị viên khóa. Không thể đăng nhập.");
+                    return View(model);
+                }
+            }
+
             var result = await _signInManager.PasswordSignInAsync(
                 model.Email,
                 model.Password,
                 model.RememberMe,
                 lockoutOnFailure: false);
 
+            if (result.IsLockedOut)
+            {
+                ViewBag.IsLockedOut = true;
+                ViewBag.LockoutMessage = "🚫 TÀI KHOẢN CỦA BẠN ĐÃ BỊ KHÓA! Quản trị viên đã tạm khóa quyền truy cập. Vui lòng liên hệ Admin để được hỗ trợ mở khóa.";
+                ModelState.AddModelError(string.Empty, "🚫 Tài khoản của bạn hiện đang bị Quản trị viên khóa. Không thể đăng nhập.");
+                return View(model);
+            }
+
             if (result.Succeeded)
             {
-                var user = await _userManager.FindByEmailAsync(model.Email);
+                // Kiểm tra lại sau khi đăng nhập đề phòng trường hợp vừa bị khóa
+                if (user != null && await _userManager.IsLockedOutAsync(user))
+                {
+                    await _signInManager.SignOutAsync();
+                    ViewBag.IsLockedOut = true;
+                    ViewBag.LockoutMessage = "🚫 TÀI KHOẢN CỦA BẠN ĐÃ BỊ KHÓA! Quản trị viên đã tạm khóa tài khoản này.";
+                    ModelState.AddModelError(string.Empty, "🚫 Tài khoản của bạn hiện đang bị Quản trị viên khóa.");
+                    return View(model);
+                }
+
                 if (user != null && await _userManager.IsInRoleAsync(user, "Admin"))
                 {
                     TempData["SuccessMessage"] = $"Xin chào Quản trị viên ({user.FullName})!";

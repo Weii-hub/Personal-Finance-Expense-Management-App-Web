@@ -14,15 +14,43 @@
 
         @if (TempData["SuccessMessage"] is string msg)
         {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <div class="alert alert-success alert-dismissible fade show rounded-4" role="alert">
                 <i class="fa-solid fa-circle-check me-2"></i> @msg
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
             </div>
         }
 
+        @if (TempData["ErrorMessage"] is string errMsg)
+        {
+            <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> @errMsg
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+            </div>
+        }
+
+        @if (ViewBag.IsLockedOut == true)
+        {
+            <div class="alert alert-danger shadow-sm border-2 rounded-4 p-3 mb-4" role="alert" style="border-color: #ff6b81 !important; background-color: #fff0f3;">
+                <div class="d-flex align-items-start">
+                    <div class="fs-1 text-danger me-3"><i class="fa-solid fa-ban"></i></div>
+                    <div>
+                        <h5 class="alert-heading fw-bold text-danger mb-1">🚫 TÀI KHOẢN ĐANG BỊ KHÓA!</h5>
+                        <p class="mb-2 text-dark small fw-semibold">
+                            @(ViewBag.LockoutMessage ?? "Tài khoản của bạn đã bị Quản trị viên tạm thời khóa quyền truy cập hệ thống.")
+                        </p>
+                        <hr class="my-2 border-danger opacity-25">
+                        <div class="small text-muted">
+                            <i class="fa-solid fa-circle-info text-danger me-1"></i>
+                            Nếu bạn cho rằng đây là sự nhầm lẫn, vui lòng liên hệ Admin qua email: <code>admin@gmail.com</code> để được hỗ trợ mở khóa.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
         <form asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3 fw-bold" role="alert"></div>
 
             <!-- Email -->
             <div class="mb-3">
@@ -70,12 +98,34 @@
         <!-- Khung Gợi ý Demo cho đồ án -->
         <div class="mt-4 p-3 bg-light rounded-3 border">
             <div class="fw-bold small text-muted mb-1"><i class="fa-solid fa-circle-info me-1 text-primary"></i> Tài khoản Demo:</div>
-            <div class="small text-muted">Admin: <code>admin@gmail.com</code> / <code>Admin@2026</code></div>
-            <div class="small text-muted">User: <code>user@gmail.com</code> / <code>User@2026</code></div>
+            <div class="small text-muted mb-1">👑 <strong>Admin:</strong> <code>admin@gmail.com</code> / Mật khẩu: <code>Admin@2026</code></div>
+            <div class="small text-muted">👤 <strong>Tài khoản Mon:</strong> <code>mon@gmail.com</code> / Mật khẩu: <code>Mon@2026</code></div>
         </div>
     </div>
 </div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    @if (ViewBag.IsLockedOut == true)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                // Hiển thị Popup cảnh báo nổi bật trên Chrome
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '🚫 TÀI KHOẢN ĐÃ BỊ KHÓA!',
+                        html: '<p class="text-danger fw-bold mb-2">Tài khoản này hiện đang bị Quản trị viên tạm khóa.</p><p class="text-muted small">Bạn không thể đăng nhập hoặc thực hiện giao dịch. Vui lòng liên hệ Admin (<strong>admin@gmail.com</strong>) để được hỗ trợ mở khóa tài khoản.</p>',
+                        confirmButtonColor: '#ff6b81',
+                        confirmButtonText: '<i class="fa-solid fa-shield-halved me-1"></i> Tôi Đã Hiểu',
+                        backdrop: `rgba(0,0,0,0.5)`,
+                        allowOutsideClick: false
+                    });
+                } else {
+                    alert("🚫 CẢNH BÁO: Tài khoản của bạn hiện đang bị Quản trị viên khóa! Vui lòng liên hệ Admin để mở khóa.");
+                }
+            });
+        </script>
+    }
 }
