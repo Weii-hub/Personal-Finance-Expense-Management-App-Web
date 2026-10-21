@@ -1,0 +1,77 @@
+@model PersonalFinanceApp.Models.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Đăng Ký Tài Khoản";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 500px;">
+    <div class="card border-0 rounded-4 shadow-sm p-4" style="border: 2px solid #ffe0d8 !important; background: #ffffff;">
+        <div class="text-center mb-4">
+            <div class="display-4 mb-2">🎀✨</div>
+            <h3 class="fw-bold text-dark mb-1">Tạo tài khoản mới</h3>
+            <p class="text-muted small">Bắt đầu hành trình làm chủ tài chính cùng Bé Quản Gia.</p>
+        </div>
+
+        <form asp-action="Register" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <!-- Họ và tên -->
+            <div class="mb-3">
+                <label asp-for="FullName" class="form-label fw-bold">Họ và tên</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user"></i></span>
+                    <input asp-for="FullName" class="form-control form-control-lg" placeholder="Nguyễn Văn A" autofocus />
+                </div>
+                <span asp-validation-for="FullName" class="text-danger small"></span>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label fw-bold">Email</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-envelope"></i></span>
+                    <input asp-for="Email" class="form-control form-control-lg" placeholder="name@example.com" />
+                </div>
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <!-- Mật khẩu -->
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label fw-bold">Mật khẩu</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
+                    <input asp-for="Password" class="form-control form-control-lg" placeholder="Ít nhất 6 ký tự" />
+                </div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <!-- Xác nhận mật khẩu -->
+            <div class="mb-4">
+                <label asp-for="ConfirmPassword" class="form-label fw-bold">Xác nhận mật khẩu</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-shield-halved"></i></span>
+                    <input asp-for="ConfirmPassword" class="form-control form-control-lg" placeholder="Nhập lại mật khẩu trên" />
+                </div>
+                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-grid mb-3">
+                <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="fa-solid fa-user-plus me-1"></i> Hoàn tất Đăng ký
+                </button>
+            </div>
+
+            <!-- Chuyển sang Login -->
+            <div class="text-center text-muted small">
+                Đã có tài khoản? 
+                <a asp-action="Login" class="text-primary fw-bold text-decoration-none">Đăng nhập</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

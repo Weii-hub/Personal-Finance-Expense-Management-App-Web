@@ -1,6 +1,62 @@
-﻿@{
-    ViewData["Title"] = "Privacy Policy";
+@{
+    ViewData["Title"] = "Chính Sách Bảo Mật & Quyền Riêng Tư";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container mt-4" style="max-width: 800px;">
+    <div class="text-center mb-4">
+        <div class="display-4 mb-2">🔒🛡️</div>
+        <h2 class="fw-bold">Chính Sách Bảo Mật & Quyền Riêng Tư</h2>
+        <p class="text-muted">Cam kết bảo vệ dữ liệu tài chính và quyền riêng tư tuyệt đối cho người dùng.</p>
+    </div>
+
+    <div class="card border-0 rounded-4 shadow-sm p-4 mb-4" style="border: 2px solid #ffe0d8 !important; background: #ffffff;">
+        <div class="d-flex align-items-center mb-3">
+            <div class="p-3 bg-success-subtle text-success rounded-circle me-3">
+                <i class="fa-solid fa-lock fa-xl"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-1">1. Quyền Riêng Tư Tài Chính Tuyệt Đối</h5>
+                <p class="text-muted mb-0">Dữ liệu chi tiêu cá nhân là thông tin nhạy cảm. Chúng tôi cam kết không chia sẻ dữ liệu cho bất kỳ bên thứ ba nào.</p>
+            </div>
+        </div>
+        <hr class="my-3 text-muted" />
+
+        <div class="d-flex align-items-center mb-3">
+            <div class="p-3 bg-primary-subtle text-primary rounded-circle me-3">
+                <i class="fa-solid fa-credit-card fa-xl"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-1">2. Không Lưu Trữ Thông Tin Thanh Toán Thật</h5>
+                <p class="text-muted mb-0">Ứng dụng hoạt động theo cơ chế ghi chép sổ tay điện tử thông minh. Chúng tôi <strong>không bao giờ</strong> yêu cầu số thẻ tín dụng, mã PIN hay mật khẩu ngân hàng của bạn.</p>
+            </div>
+        </div>
+        <hr class="my-3 text-muted" />
+
+        <div class="d-flex align-items-center mb-3">
+            <div class="p-3 bg-warning-subtle text-warning rounded-circle me-3">
+                <i class="fa-solid fa-cloud-arrow-up fa-xl"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-1">3. Mã Hóa Kết Nối Điện Toán Đám Mây</h5>
+                <p class="text-muted mb-0">Toàn bộ dữ liệu được lưu trữ trên nền tảng Supabase PostgreSQL với giao thức mã hóa đường truyền SSL/TLS 1.3 và quản lý Secret an toàn.</p>
+            </div>
+        </div>
+        <hr class="my-3 text-muted" />
+
+        <div class="d-flex align-items-center">
+            <div class="p-3 bg-info-subtle text-info rounded-circle me-3">
+                <i class="fa-solid fa-graduation-cap fa-xl"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-1">4. Thông Tin Dự Án Học Phần</h5>
+                <p class="text-muted mb-0">Sản phẩm được phát triển phục vụ mục đích học tập và nghiên cứu môn <strong>Công nghệ phần mềm nâng cao</strong> - Trường Đại học Ngoại ngữ - Tin học TP.HCM (HUFLIT).</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i> Quay về Trang chủ
+        </a>
+    </div>
+</div>

@@ -1,0 +1,81 @@
+@model PersonalFinanceApp.Models.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Đăng Nhập";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 480px;">
+    <div class="card border-0 rounded-4 shadow-sm p-4" style="border: 2px solid #ffe0d8 !important; background: #ffffff;">
+        <div class="text-center mb-4">
+            <div class="display-4 mb-2">🧸🔑</div>
+            <h3 class="fw-bold text-dark mb-1">Chào mừng quay lại!</h3>
+            <p class="text-muted small">Đăng nhập để theo dõi và quản lý dòng tiền của bạn.</p>
+        </div>
+
+        @if (TempData["SuccessMessage"] is string msg)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fa-solid fa-circle-check me-2"></i> @msg
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+            </div>
+        }
+
+        <form asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <!-- Email -->
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label fw-bold">Email đăng nhập</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-envelope"></i></span>
+                    <input asp-for="Email" class="form-control form-control-lg" placeholder="name@example.com" autofocus />
+                </div>
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <!-- Mật khẩu -->
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label fw-bold">Mật khẩu</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
+                    <input asp-for="Password" class="form-control form-control-lg" placeholder="••••••••" />
+                </div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <!-- Remember me & Forgot Password -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="form-check">
+                    <input asp-for="RememberMe" class="form-check-input" />
+                    <label asp-for="RememberMe" class="form-check-label text-muted small"></label>
+                </div>
+                <a href="#" class="text-primary small text-decoration-none">Quên mật khẩu?</a>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-grid mb-3">
+                <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="fa-solid fa-right-to-bracket me-1"></i> Đăng nhập
+                </button>
+            </div>
+
+            <!-- Chuyển sang Register -->
+            <div class="text-center text-muted small">
+                Chưa có tài khoản? 
+                <a asp-action="Register" class="text-primary fw-bold text-decoration-none">Đăng ký ngay</a>
+            </div>
+        </form>
+
+        <!-- Khung Gợi ý Demo cho đồ án -->
+        <div class="mt-4 p-3 bg-light rounded-3 border">
+            <div class="fw-bold small text-muted mb-1"><i class="fa-solid fa-circle-info me-1 text-primary"></i> Tài khoản Demo:</div>
+            <div class="small text-muted">Admin: <code>admin@gmail.com</code> / <code>Admin@2026</code></div>
+            <div class="small text-muted">User: <code>user@gmail.com</code> / <code>User@2026</code></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

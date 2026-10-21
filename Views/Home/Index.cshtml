@@ -1,8 +1,184 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model PersonalFinanceApp.Models.HomeDashboardViewModel
+
+@{
+    ViewData["Title"] = "Trang Chủ - Bé Quản Gia";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container mt-3">
+    <!-- Hero Banner -->
+    <div class="hero-banner p-4 p-md-5 mb-4 text-center rounded-4 shadow-sm" style="background: linear-gradient(135deg, #fff0f3 0%, #fff8f0 50%, #f0f7ff 100%); border: 2px solid #ffe0d8;">
+        <div class="display-3 mb-2">💸🧸</div>
+        <h1 class="display-5 fw-bold text-dark mb-2">Bé Quản Gia Tài Chính</h1>
+        <p class="lead text-muted mx-auto mb-4" style="max-width: 650px;">
+            Chào mừng bạn! Ứng dụng ghi chép thu chi cá nhân với phong cách Pastel nhẹ nhàng, giúp bạn biến việc quản lý tiền bạc mỗi ngày thành một thói quen vui vẻ và tích cực.
+        </p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a asp-controller="Transactions" asp-action="Create" class="btn btn-primary btn-lg shadow-sm">
+                <i class="fa-solid fa-plus me-1"></i> Ghi chép giao dịch
+            </a>
+            <a asp-controller="Wallets" asp-action="Index" class="btn btn-outline-primary btn-lg">
+                <i class="fa-solid fa-wallet me-1"></i> Xem các ví tiền
+            </a>
+            <a asp-controller="Reports" asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                <i class="fa-solid fa-chart-pie me-1"></i> Biểu đồ phân tích
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 Thẻ Số Liệu Tổng Quan -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 rounded-4 shadow-sm h-100 p-3" style="background: #ffffff; border: 2px solid #e0e7ff !important;">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 rounded-circle me-3" style="background: #eef2ff; color: #4f46e5;">
+                        <i class="fa-solid fa-vault fa-xl"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Tổng tài sản</small>
+                        <h4 class="mb-0 fw-bold text-primary">@Model.TotalBalance.ToString("N0") đ</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 rounded-4 shadow-sm h-100 p-3" style="background: #ffffff; border: 2px solid #e6fcf5 !important;">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 rounded-circle me-3" style="background: #e6fcf5; color: #20c997;">
+                        <i class="fa-solid fa-arrow-trend-up fa-xl"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Thu tháng này</small>
+                        <h4 class="mb-0 fw-bold text-success">+@Model.MonthlyIncome.ToString("N0") đ</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 rounded-4 shadow-sm h-100 p-3" style="background: #ffffff; border: 2px solid #ffe3e3 !important;">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 rounded-circle me-3" style="background: #ffe3e3; color: #ff6b81;">
+                        <i class="fa-solid fa-arrow-trend-down fa-xl"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Chi tháng này</small>
+                        <h4 class="mb-0 fw-bold text-danger">-@Model.MonthlyExpense.ToString("N0") đ</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 rounded-4 shadow-sm h-100 p-3" style="background: #ffffff; border: 2px solid #fff3bf !important;">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 rounded-circle me-3" style="background: #fff3bf; color: #f59f00;">
+                        <i class="fa-solid fa-credit-card fa-xl"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Số lượng Ví</small>
+                        <h4 class="mb-0 fw-bold text-dark">@Model.TotalWallets ví đang dùng</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hàng 2 cột: Giao dịch gần đây & Tính năng nổi bật -->
+    <div class="row g-4 mb-5">
+        <!-- 5 Giao dịch gần nhất -->
+        <div class="col-lg-7">
+            <div class="card border-0 rounded-4 shadow-sm p-4 h-100" style="border: 2px solid #ffe0d8 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">🕒 Giao dịch mới nhất</h5>
+                    <a asp-controller="Transactions" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                        Xem tất cả (@Model.TotalTransactions)
+                    </a>
+                </div>
+                @if (!Model.RecentTransactions.Any())
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-receipt fa-2x mb-2 text-secondary"></i>
+                        <p class="mb-0">Chưa có giao dịch nào gần đây.</p>
+                        <a asp-controller="Transactions" asp-action="Create" class="btn btn-sm btn-primary mt-2">Thêm giao dịch ngay</a>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var t in Model.RecentTransactions)
+                        {
+                            var isInc = t.Category?.Type == 1;
+                            var color = string.IsNullOrEmpty(t.Category?.Color) ? (isInc ? "#20c997" : "#ff6b81") : t.Category.Color;
+                            var icon = string.IsNullOrEmpty(t.Category?.Icon) ? (isInc ? "fa-wallet" : "fa-tag") : t.Category.Icon;
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-3 border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-3 d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px; background: color-mix(in srgb, @color 15%, white); color: @color;">
+                                        <i class="fa-solid @icon"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">@(t.Category?.Name ?? "Khác")</div>
+                                        <small class="text-muted">
+                                            <span>@t.Wallet?.Name</span> &bull; 
+                                            <span>@t.TransactionDate.ToString("dd/MM/yyyy HH:mm")</span>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="fw-bold fs-6 @(isInc ? "text-success" : "text-danger")">
+                                        @(isInc ? "+" : "-")@t.Amount.ToString("N0") đ
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(t.Note))
+                                    {
+                                        <div><small class="text-muted fst-italic">@t.Note</small></div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Các tính năng thông minh -->
+        <div class="col-lg-5">
+            <div class="card border-0 rounded-4 shadow-sm p-4 h-100" style="border: 2px solid #ffe0d8 !important;">
+                <h5 class="fw-bold mb-3">✨ Tính năng nổi bật</h5>
+                <div class="d-flex align-items-start mb-3">
+                    <div class="p-2 bg-primary-subtle text-primary rounded-circle me-3 mt-1">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">Mô hình Đa Ví tiền</div>
+                        <small class="text-muted">Tách bạch tiền mặt, thẻ ngân hàng, ví điện tử để kiểm soát chính xác từng dòng tiền.</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start mb-3">
+                    <div class="p-2 bg-success-subtle text-success rounded-circle me-3 mt-1">
+                        <i class="fa-solid fa-tags"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">Danh mục Pastel tùy biến</div>
+                        <small class="text-muted">Tùy biến bảng danh mục với icon FontAwesome và bảng màu Pastel dễ thương.</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start mb-3">
+                    <div class="p-2 bg-warning-subtle text-warning rounded-circle me-3 mt-1">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">Báo cáo Biểu đồ Chart.js</div>
+                        <small class="text-muted">Biểu đồ tròn cơ cấu chi tiêu và biểu đồ so sánh Thu/Chi trực quan sinh động.</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start">
+                    <div class="p-2 bg-danger-subtle text-danger rounded-circle me-3 mt-1">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">Bảo mật Điện toán Đám mây</div>
+                        <small class="text-muted">Cơ sở dữ liệu Supabase PostgreSQL mã hóa đám mây, an toàn và bảo mật.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
