@@ -1,0 +1,72 @@
+/* transactions.css - Theme Pastel cho Quản lý Giao dịch */
+
+.transaction-summary-card {
+    background: #fff;
+    border: 2px solid #ffe0d8;
+    border-radius: 20px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 8px 22px rgba(89, 74, 78, .06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.transaction-summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 26px rgba(89, 74, 78, .1);
+}
+
+.transaction-summary-card.income-card {
+    border-top: 5px solid #20c997;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.transaction-summary-card.expense-card {
+    border-top: 5px solid #ff6b81;
+    background: linear-gradient(180deg, #fff5f5 0%, #ffffff 100%);
+}
+
+.transaction-summary-card.net-card {
+    border-top: 5px solid #70a1ff;
+    background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 100%);
+}
+
+.transaction-filter-card,
+.transaction-panel,
+.transaction-form-card {
+    background: #fff;
+    border: 2px solid #ffe0d8;
+    border-radius: 22px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 22px rgba(89, 74, 78, .06);
+}
+
+.transaction-badge-icon {
+    display: inline-flex;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    margin-right: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.badge-wallet {
+    background-color: #f1f2f6;
+    color: #57606f;
+    border-radius: 10px;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.amount-income {
+    color: #20c997;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.amount-expense {
+    color: #ff4757;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
