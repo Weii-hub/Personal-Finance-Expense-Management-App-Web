@@ -56,7 +56,6 @@ namespace PersonalFinanceApp.Controllers
                 .ThenByDescending(t => t.Id)
                 .ToListAsync();
 
-            // Tính toán tổng số liệu thống kê
             decimal totalIncome = transactions
                 .Where(t => t.Category?.Type == 1)
                 .Sum(t => t.Amount);
@@ -93,7 +92,7 @@ namespace PersonalFinanceApp.Controllers
             return View(model);
         }
 
-        // POST: Transactions/Create (Gắn UserId vào giao dịch - Issue #15)
+        // POST: Transactions/Create (Gắn UserId vào giao dịch & Xử lý cảnh báo số dư ví)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Transaction transaction)
@@ -116,11 +115,25 @@ namespace PersonalFinanceApp.Controllers
 
             transaction.UserId = userId;
 
-            // Logic cập nhật số dư ví
+            // Logic cập nhật số dư ví & Cảnh báo số dư âm
             if (category!.Type == 1)
+            {
                 wallet!.InitialBalance += transaction.Amount;
+                TempData["SuccessMessage"] = $"Đã ghi nhận giao dịch thu {transaction.Amount:N0} đ thành công!";
+            }
             else
+            {
+                var willBeNegative = transaction.Amount > wallet!.InitialBalance;
                 wallet!.InitialBalance -= transaction.Amount;
+                if (willBeNegative)
+                {
+                    TempData["SuccessMessage"] = $"Đã ghi nhận giao dịch chi {transaction.Amount:N0} đ thành công! (⚠️ Cảnh báo: Ví '{wallet.Name}' hiện đang bị âm {wallet.InitialBalance:N0} đ)";
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = $"Đã ghi nhận giao dịch chi {transaction.Amount:N0} đ thành công!";
+                }
+            }
 
             if (transaction.TransactionDate.Kind == DateTimeKind.Unspecified)
             {
@@ -130,7 +143,6 @@ namespace PersonalFinanceApp.Controllers
             _context.Transactions.Add(transaction);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Đã ghi nhận giao dịch {(category.Type == 1 ? "thu" : "chi")} {transaction.Amount:N0} đ thành công!";
             return RedirectToAction(nameof(Index));
         }
 
@@ -256,20 +268,34 @@ namespace PersonalFinanceApp.Controllers
         private async Task PopulateSelectListsAsync(int? selectedWalletId = null, int? selectedCategoryId = null)
         {
             var userId = GetCurrentUserId();
-            var wallets = await _context.Wallets
+            var rawWallets = await _context.Wallets
                 .Where(w => w.UserId == userId)
                 .OrderBy(w => w.Name)
-                .Select(w => new { w.Id, Display = $"{w.Name} (Số dư: {w.InitialBalance:N0} đ)" })
                 .ToListAsync();
 
-            var categories = await _context.Categories
+            var rawCategories = await _context.Categories
                 .OrderBy(c => c.Type)
                 .ThenBy(c => c.Name)
-                .Select(c => new { c.Id, Display = $"{(c.Type == 1 ? "➕ [Thu]" : "➖ [Chi]")} {c.Name}" })
                 .ToListAsync();
+
+            var wallets = rawWallets
+                .Select(w => new { w.Id, Display = $"{w.Name} (Số dư: {w.InitialBalance:N0} đ)" })
+                .ToList();
+
+            var categories = rawCategories
+                .Select(c => new { c.Id, Display = $"{(c.Type == 1 ? "➕ [Thu]" : "➖ [Chi]")} {c.Name}" })
+                .ToList();
 
             ViewBag.WalletId = new SelectList(wallets, "Id", "Display", selectedWalletId);
             ViewBag.CategoryId = new SelectList(categories, "Id", "Display", selectedCategoryId);
+
+            // Dữ liệu cho Client-side JavaScript kiểm tra cảnh báo chi vượt số dư ví (UX chuyên nghiệp)
+            ViewBag.WalletsBalanceJson = System.Text.Json.JsonSerializer.Serialize(
+                rawWallets.ToDictionary(w => w.Id.ToString(), w => new { Name = w.Name, Balance = w.InitialBalance })
+            );
+            ViewBag.CategoriesTypeJson = System.Text.Json.JsonSerializer.Serialize(
+                rawCategories.ToDictionary(c => c.Id.ToString(), c => c.Type)
+            );
         }
     }
 }

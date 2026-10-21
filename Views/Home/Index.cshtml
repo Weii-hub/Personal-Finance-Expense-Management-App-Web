@@ -28,14 +28,22 @@
     <!-- 4 Thẻ Số Liệu Tổng Quan -->
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 rounded-4 shadow-sm h-100 p-3" style="background: #ffffff; border: 2px solid #e0e7ff !important;">
+            <div class="card border-0 rounded-4 shadow-sm h-100 p-3" style="background: #ffffff; border: 2px solid @(Model.TotalBalance >= 0 ? "#e0e7ff" : "#ffe3e3") !important;">
                 <div class="d-flex align-items-center">
-                    <div class="p-3 rounded-circle me-3" style="background: #eef2ff; color: #4f46e5;">
-                        <i class="fa-solid fa-vault fa-xl"></i>
+                    <div class="p-3 rounded-circle me-3" style="background: @(Model.TotalBalance >= 0 ? "#eef2ff" : "#ffe3e3"); color: @(Model.TotalBalance >= 0 ? "#4f46e5" : "#ff6b81");">
+                        <i class="fa-solid @(Model.TotalBalance >= 0 ? "fa-vault" : "fa-triangle-exclamation") fa-xl"></i>
                     </div>
                     <div>
                         <small class="text-muted text-uppercase fw-bold">Tổng tài sản</small>
-                        <h4 class="mb-0 fw-bold text-primary">@Model.TotalBalance.ToString("N0") đ</h4>
+                        <h4 class="mb-0 fw-bold @(Model.TotalBalance >= 0 ? "text-primary" : "text-danger")">
+                            @Model.TotalBalance.ToString("N0") đ
+                        </h4>
+                        @if (Model.TotalBalance < 0)
+                        {
+                            <span class="badge bg-danger-subtle text-danger small mt-1">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Đang âm tài sản
+                            </span>
+                        }
                     </div>
                 </div>
             </div>
@@ -61,7 +69,8 @@
                     </div>
                     <div>
                         <small class="text-muted text-uppercase fw-bold">Chi tháng này</small>
-                        <h4 class="mb-0 fw-bold text-danger">-@Model.MonthlyExpense.ToString("N0") đ</h4>
+                        <!-- Chuẩn tài chính: Hiển thị độ lớn chi tiêu là số dương màu đỏ, không để dấu trừ gây hiểu nhầm -->
+                        <h4 class="mb-0 fw-bold text-danger">@Model.MonthlyExpense.ToString("N0") đ</h4>
                     </div>
                 </div>
             </div>

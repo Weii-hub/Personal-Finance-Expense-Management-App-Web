@@ -1,37 +1,145 @@
 @model IEnumerable<PersonalFinanceApp.Models.Wallet>
 
 @{
-    ViewData["Title"] = "Quản lý Ví";
+    ViewData["Title"] = "Quản lý Ví Tiền";
+    decimal totalBalance = Model.Sum(w => w.InitialBalance);
+    int totalWallets = Model.Count();
 }
 
-<div class="container mt-4">
-    <h2>Quản lý Ví tiền</h2>
+<div class="container mt-4 mb-5">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fa-solid fa-wallet text-success me-2"></i> Quản Lý Ví Tiền</h2>
+            <p class="text-muted mb-0">Theo dõi chi tiết số dư các nguồn tiền mặt, tài khoản ngân hàng và ví điện tử của bạn.</p>
+        </div>
+        <a asp-action="Create" class="btn btn-primary btn-lg shadow-sm">
+            <i class="fa-solid fa-plus me-1"></i> Thêm ví mới
+        </a>
+    </div>
 
-    <p>
-        <a asp-action="Create" class="btn btn-primary">Thêm ví mới</a>
-    </p>
-    <table class="table table-striped table-bordered">
-        <thead class="table-dark">
-            <tr>
-                <th>Tên Ví</th>
-                <th>Số dư</th>
-                <th>Icon</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-    @foreach (var item in Model) {
-            <tr>
-                <td><strong>@item.Name</strong></td>
-                <td class="text-success fw-bold">@item.InitialBalance.ToString("N0") đ</td>
-                <td>@item.Icon</td>
-                <td>
-                    <!-- Nút sửa/xóa sẽ làm ở bài sau -->
-                    <a href="#" class="btn btn-sm btn-outline-secondary">Sửa</a>
-                    <a href="#" class="btn btn-sm btn-outline-danger">Xóa</a>
-                </td>
-            </tr>
+    <!-- Thông báo Success / Error -->
+    @if (TempData["SuccessMessage"] is string success)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i> @success
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
     }
-        </tbody>
-    </table>
+
+    <!-- 2 Thẻ Tổng Quan -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-4">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="background: #ffffff; border: 2px solid #e0e7ff !important;">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 rounded-circle me-3" style="background: #eef2ff; color: #4f46e5;">
+                        <i class="fa-solid fa-wallet fa-xl"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Tổng Số Ví</small>
+                        <h3 class="mb-0 fw-bold text-primary mt-1">@totalWallets ví</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-5">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="background: #ffffff; border: 2px solid @(totalBalance >= 0 ? "#e6fcf5" : "#ffe3e3") !important;">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 rounded-circle me-3" style="background: @(totalBalance >= 0 ? "#e6fcf5" : "#ffe3e3"); color: @(totalBalance >= 0 ? "#20c997" : "#ff6b81");">
+                        <i class="fa-solid @(totalBalance >= 0 ? "fa-vault" : "fa-triangle-exclamation") fa-xl"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Tổng Tài Sản Khả Dụng</small>
+                        <h3 class="mb-0 @(totalBalance >= 0 ? "text-success" : "text-danger") fw-bold mt-1">
+                            @totalBalance.ToString("N0") đ
+                        </h3>
+                        @if (totalBalance < 0)
+                        {
+                            <span class="badge bg-danger-subtle text-danger small mt-1">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Tài sản tổng đang bị âm!
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách các ví -->
+    <div class="card border-0 rounded-4 shadow-sm p-4" style="background: #ffffff; border: 2px solid #ffe0d8 !important;">
+        <h5 class="fw-bold mb-3"><i class="fa-solid fa-credit-card text-primary me-2"></i> Danh Sách Ví Hiện Có</h5>
+
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5">
+                <div class="display-3 mb-3">👛</div>
+                <h5>Bạn chưa có ví tiền nào</h5>
+                <p class="text-muted">Hãy tạo chiếc ví đầu tiên (ví dụ: Ví tiền mặt, MoMo, Techcombank) để bắt đầu ghi chép nhé!</p>
+                <a asp-action="Create" class="btn btn-outline-primary mt-2">
+                    <i class="fa-solid fa-plus me-1"></i> Tạo ví ngay
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tên Ví</th>
+                            <th>Số Dư Khả Dụng</th>
+                            <th>Trạng Thái</th>
+                            <th class="text-end">Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var isNegative = item.InitialBalance < 0;
+                            var iconClass = string.IsNullOrWhiteSpace(item.Icon) ? "fa-wallet" : item.Icon;
+                            if (!iconClass.StartsWith("fa-")) iconClass = "fa-" + iconClass;
+
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="p-2 rounded-circle me-3 text-center" style="width: 44px; height: 44px; background: #fff0f3; color: #ff6b81; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fa-solid @iconClass fa-lg"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark fs-6">@item.Name</div>
+                                            <small class="text-muted">Biểu tượng: <code>@item.Icon</code></small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="@(isNegative ? "text-danger" : "text-success") fw-bold fs-5">
+                                        @item.InitialBalance.ToString("N0") đ
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (isNegative)
+                                    {
+                                        <span class="badge bg-danger rounded-pill px-3 py-2">
+                                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Bị âm tiền (Thấu chi)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2">
+                                            <i class="fa-solid fa-circle-check me-1"></i> Hoạt động tốt
+                                        </span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <a asp-controller="Transactions" asp-action="Create" asp-route-walletId="@item.Id" class="btn btn-sm btn-outline-primary me-1" title="Tạo giao dịch với ví này">
+                                        <i class="fa-solid fa-plus me-1"></i> Ghi chép
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 </div>

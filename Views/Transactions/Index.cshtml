@@ -24,13 +24,13 @@
     <!-- Thông báo Success / Error -->
     @if (TempData["SuccessMessage"] is string success)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm" role="alert">
             <i class="fa-solid fa-circle-check me-2"></i> @success
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
         </div>
     }
 
-    <!-- 3 Thẻ thống kê tổng quan -->
+    <!-- 3 Thẻ thống kê tổng quan (Chuẩn công ty phần mềm tài chính) -->
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="transaction-summary-card income-card">
@@ -50,7 +50,8 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <span class="text-muted small text-uppercase fw-bold">Tổng Chi Tiêu</span>
-                        <h3 class="mb-0 text-danger fw-bold mt-1">-@totalExpense.ToString("N0") đ</h3>
+                        <!-- Chuẩn tài chính: Hiển thị độ lớn chi tiêu là số dương màu đỏ, không để dấu trừ gây hiểu nhầm -->
+                        <h3 class="mb-0 text-danger fw-bold mt-1">@totalExpense.ToString("N0") đ</h3>
                     </div>
                     <div class="p-3 bg-danger-subtle text-danger rounded-circle">
                         <i class="fa-solid fa-arrow-trend-down fa-xl"></i>
@@ -66,6 +67,10 @@
                         <h3 class="mb-0 @(netBalance >= 0 ? "text-primary" : "text-danger") fw-bold mt-1">
                             @(netBalance >= 0 ? "+" : "")@netBalance.ToString("N0") đ
                         </h3>
+                        @if (netBalance < 0)
+                        {
+                            <span class="badge bg-danger-subtle text-danger small mt-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Đang bội chi</span>
+                        }
                     </div>
                     <div class="p-3 bg-primary-subtle text-primary rounded-circle">
                         <i class="fa-solid fa-scale-balanced fa-xl"></i>

@@ -28,7 +28,7 @@
                 <label asp-for="Amount" class="form-label fw-bold">Số tiền (VNĐ) <span class="text-danger">*</span></label>
                 <div class="input-group input-group-lg">
                     <span class="input-group-text bg-light text-primary fw-bold">₫</span>
-                    <input asp-for="Amount" type="number" min="1" step="1000" class="form-control fw-bold fs-4 text-primary" placeholder="0" autofocus required />
+                    <input asp-for="Amount" id="Amount" type="number" min="1" step="1000" class="form-control fw-bold fs-4 text-primary" placeholder="0" autofocus required />
                 </div>
                 <span asp-validation-for="Amount" class="text-danger small"></span>
             </div>
@@ -36,7 +36,7 @@
             <!-- Danh mục -->
             <div class="mb-3">
                 <label asp-for="CategoryId" class="form-label fw-bold">Danh mục <span class="text-danger">*</span></label>
-                <select asp-for="CategoryId" class="form-select form-select-lg" asp-items="ViewBag.CategoryId" required>
+                <select asp-for="CategoryId" id="CategoryId" class="form-select form-select-lg" asp-items="ViewBag.CategoryId" required>
                     <option value="">-- Chọn danh mục thu / chi --</option>
                 </select>
                 <span asp-validation-for="CategoryId" class="text-danger small"></span>
@@ -46,10 +46,21 @@
             <!-- Ví tiền -->
             <div class="mb-3">
                 <label asp-for="WalletId" class="form-label fw-bold">Ví thanh toán <span class="text-danger">*</span></label>
-                <select asp-for="WalletId" class="form-select form-select-lg" asp-items="ViewBag.WalletId" required>
+                <select asp-for="WalletId" id="WalletId" class="form-select form-select-lg" asp-items="ViewBag.WalletId" required>
                     <option value="">-- Chọn ví nhận hoặc trừ tiền --</option>
                 </select>
                 <span asp-validation-for="WalletId" class="text-danger small"></span>
+            </div>
+
+            <!-- Cảnh Báo Số Dư Âm Thông Minh (Soft Overdraft Warning theo chuẩn công ty phần mềm) -->
+            <div id="overdraftWarning" class="alert alert-warning rounded-4 shadow-sm mb-3 d-none" style="border: 2px solid #ffd43b; background-color: #fff9db;">
+                <div class="d-flex align-items-start">
+                    <i class="fa-solid fa-triangle-exclamation text-warning fs-3 me-3 mt-1"></i>
+                    <div>
+                        <strong class="text-dark d-block mb-1">⚠️ Lưu ý: Khoản chi vượt số dư ví!</strong>
+                        <div id="overdraftDetails" class="small text-muted mb-0"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Thời gian giao dịch -->
@@ -78,4 +89,54 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        const walletsData = @Html.Raw(ViewBag.WalletsBalanceJson ?? "{}");
+        const categoriesData = @Html.Raw(ViewBag.CategoriesTypeJson ?? "{}");
+
+        function checkOverdraft() {
+            const amountInput = document.getElementById('Amount');
+            const walletSelect = document.getElementById('WalletId');
+            const categorySelect = document.getElementById('CategoryId');
+            const warningBox = document.getElementById('overdraftWarning');
+            const detailsBox = document.getElementById('overdraftDetails');
+
+            if (!amountInput || !walletSelect || !categorySelect || !warningBox) return;
+
+            const amount = parseFloat(amountInput.value) || 0;
+            const walletId = walletSelect.value;
+            const categoryId = categorySelect.value;
+
+            if (!walletId || !categoryId || amount <= 0) {
+                warningBox.classList.add('d-none');
+                return;
+            }
+
+            const categoryType = categoriesData[categoryId]; // 0: Chi tiêu, 1: Thu nhập
+            const wallet = walletsData[walletId];
+
+            if (categoryType === 0 && wallet) {
+                const currentBalance = wallet.Balance;
+                if (amount > currentBalance) {
+                    const newBalance = currentBalance - amount;
+                    detailsBox.innerHTML = `Ví <strong>${wallet.Name}</strong> hiện có <strong>${currentBalance.toLocaleString('vi-VN')} đ</strong>. Sau khoản chi này, số dư ví sẽ bị <strong>âm: ${newBalance.toLocaleString('vi-VN')} đ</strong>. Bạn vẫn có thể tiếp tục lưu nếu đây là khoản thấu chi/tiêu trước trả sau.`;
+                    warningBox.classList.remove('d-none');
+                    return;
+                }
+            }
+            warningBox.classList.add('d-none');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const amountInput = document.getElementById('Amount');
+            const walletSelect = document.getElementById('WalletId');
+            const categorySelect = document.getElementById('CategoryId');
+
+            if (amountInput) amountInput.addEventListener('input', checkOverdraft);
+            if (walletSelect) walletSelect.addEventListener('change', checkOverdraft);
+            if (categorySelect) categorySelect.addEventListener('change', checkOverdraft);
+
+            checkOverdraft();
+        });
+    </script>
 }
