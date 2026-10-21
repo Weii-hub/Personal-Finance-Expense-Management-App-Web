@@ -1,9 +1,12 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PersonalFinanceApp.Models;
 
 namespace PersonalFinanceApp.Controllers
 {
+    [Authorize]
     public class CategoriesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -13,9 +16,13 @@ namespace PersonalFinanceApp.Controllers
             _context = context;
         }
 
-        // GET: Categories
+        private string GetCurrentUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        // GET: Categories (Phân quyền & chỉ thống kê số lượng giao dịch của chính User - Issue #15)
         public async Task<IActionResult> Index()
         {
+            var userId = GetCurrentUserId();
+
             var categories = await _context.Categories
                 .AsNoTracking()
                 .OrderBy(c => c.Type)
@@ -27,7 +34,7 @@ namespace PersonalFinanceApp.Controllers
                     Type = c.Type,
                     Icon = c.Icon,
                     Color = c.Color,
-                    TransactionCount = c.Transactions == null ? 0 : c.Transactions.Count
+                    TransactionCount = c.Transactions == null ? 0 : c.Transactions.Count(t => t.UserId == userId)
                 })
                 .ToListAsync();
 

@@ -33,33 +33,36 @@
                                 <i class="fa-solid fa-house me-1 text-primary"></i> Trang chủ
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Wallets" asp-action="Index">
-                                <i class="fa-solid fa-wallet me-1 text-success"></i> Quản lý Ví
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Categories" asp-action="Index">
-                                <i class="fa-solid fa-tags me-1 text-warning"></i> Danh mục
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Transactions" asp-action="Index">
-                                <i class="fa-solid fa-receipt me-1 text-danger"></i> Giao dịch
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Reports" asp-action="Index">
-                                <i class="fa-solid fa-chart-pie me-1 text-info"></i> Biểu đồ
-                            </a>
-                        </li>
-                        @if (User.IsInRole("Admin"))
+                        @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link admin-pill" asp-controller="Admin" asp-action="Index">
-                                    <i class="fa-solid fa-shield-halved me-1 text-danger"></i> Quản Trị (Admin)
+                                <a class="nav-link" asp-area="" asp-controller="Wallets" asp-action="Index">
+                                    <i class="fa-solid fa-wallet me-1 text-success"></i> Quản lý Ví
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Categories" asp-action="Index">
+                                    <i class="fa-solid fa-tags me-1 text-warning"></i> Danh mục
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Transactions" asp-action="Index">
+                                    <i class="fa-solid fa-receipt me-1 text-danger"></i> Giao dịch
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Reports" asp-action="Index">
+                                    <i class="fa-solid fa-chart-pie me-1 text-info"></i> Biểu đồ
+                                </a>
+                            </li>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link admin-pill" asp-controller="Admin" asp-action="Index">
+                                        <i class="fa-solid fa-shield-halved me-1 text-danger"></i> Quản Trị (Admin)
+                                    </a>
+                                </li>
+                            }
                         }
                     </ul>
 
