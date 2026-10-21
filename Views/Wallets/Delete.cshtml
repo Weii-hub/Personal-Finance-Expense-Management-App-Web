@@ -1,0 +1,92 @@
+@model PersonalFinanceApp.Models.Wallet
+
+@{
+    ViewData["Title"] = "Xóa Ví Tiền";
+    bool canDelete = ViewBag.CanDelete ?? false;
+    int transactionCount = ViewBag.TransactionCount ?? 0;
+    string? blockReason = ViewBag.BlockReason as string;
+}
+
+<div class="container mt-4 mb-5" style="max-width: 580px;">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fa-solid fa-trash-can text-danger me-2"></i> Xác Nhận Xóa Ví</h2>
+            <p class="text-muted mb-0">Kiểm tra thông tin trước khi thực hiện thao tác xóa ví.</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+
+    <!-- Thông tin chi tiết chiếc ví -->
+    <div class="card border-0 rounded-4 shadow-sm p-4 mb-4" style="background: #ffffff; border: 2px solid #ffe0d8 !important;">
+        <div class="d-flex align-items-center mb-3">
+            <div class="p-3 rounded-circle me-3 text-center" style="width: 56px; height: 56px; background: #fff0f3; color: #ff6b81; display: flex; align-items: center; justify-content: center;">
+                <i class="fa-solid @(string.IsNullOrWhiteSpace(Model.Icon) ? "fa-wallet" : Model.Icon) fa-2xl"></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-1">@Model.Name</h4>
+                <div class="text-muted small">Biểu tượng: <code>@Model.Icon</code></div>
+            </div>
+        </div>
+
+        <div class="p-3 bg-light rounded-3 mb-3 border">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Số dư hiện có:</span>
+                <span class="fw-bold fs-5 @(Model.InitialBalance < 0 ? "text-danger" : "text-success")">
+                    @Model.InitialBalance.ToString("N0") đ
+                </span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted">Số lượng giao dịch liên kết:</span>
+                <span class="badge @(transactionCount > 0 ? "bg-warning text-dark" : "bg-secondary") rounded-pill px-3 py-2">
+                    @transactionCount giao dịch
+                </span>
+            </div>
+        </div>
+
+        @if (!canDelete)
+        {
+            <!-- Không cho xóa: Hiển thị lý do bảo vệ dữ liệu -->
+            <div class="alert alert-danger rounded-4 p-3 mb-4" style="border: 2px solid #ff8787; background-color: #fff5f5;">
+                <div class="d-flex align-items-start">
+                    <i class="fa-solid fa-ban text-danger fs-2 me-3 mt-1"></i>
+                    <div>
+                        <strong class="text-danger d-block mb-1">Không thể xóa ví này!</strong>
+                        <p class="small text-dark mb-0">@blockReason</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <a asp-action="Index" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Quay lại Quản lý Ví
+                </a>
+            </div>
+        }
+        else
+        {
+            <!-- Được phép xóa -->
+            <div class="alert alert-warning rounded-4 p-3 mb-4" style="border: 2px solid #ffd43b; background-color: #fff9db;">
+                <div class="d-flex align-items-start">
+                    <i class="fa-solid fa-triangle-exclamation text-warning fs-3 me-3 mt-1"></i>
+                    <div>
+                        <strong class="text-dark d-block mb-1">Cảnh báo: Hành động này không thể hoàn tác!</strong>
+                        <p class="small text-muted mb-0">Bạn có chắc chắn muốn xóa vĩnh viễn chiếc ví <strong>@Model.Name</strong> khỏi tài khoản của mình?</p>
+                    </div>
+                </div>
+            </div>
+
+            <form asp-action="Delete" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-danger btn-lg shadow-sm">
+                        <i class="fa-solid fa-trash-can me-1"></i> Xác Nhận Xóa Ví Vĩnh Viễn
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Hủy bỏ</a>
+                </div>
+            </form>
+        }
+    </div>
+</div>

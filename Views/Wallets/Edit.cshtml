@@ -1,0 +1,94 @@
+@model PersonalFinanceApp.Models.Wallet
+
+@{
+    ViewData["Title"] = "Chỉnh Sửa Ví";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 600px;">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Chỉnh Sửa Ví</h2>
+            <p class="text-muted mb-0">Cập nhật tên gọi, biểu tượng hoặc số dư cho chiếc ví của bạn.</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+
+    <div class="card border-0 rounded-4 shadow-sm p-4" style="background: #ffffff; border: 2px solid #ffe0d8 !important;">
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <!-- Tên ví -->
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label fw-bold">Tên ví <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-wallet"></i></span>
+                    <input asp-for="Name" class="form-control form-control-lg" placeholder="Ví dụ: Ví Tiền Mặt, MoMo, Techcombank..." required autofocus />
+                </div>
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+
+            <!-- Số dư ban đầu -->
+            <div class="mb-3">
+                <label asp-for="InitialBalance" class="form-label fw-bold">Số dư hiện tại / ban đầu (VNĐ) <span class="text-danger">*</span></label>
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-light text-primary fw-bold">₫</span>
+                    <input asp-for="InitialBalance" type="number" step="1000" class="form-control fw-bold fs-5 text-primary" required />
+                </div>
+                <span asp-validation-for="InitialBalance" class="text-danger small"></span>
+                <div class="form-text text-muted small">Bạn có thể điều chỉnh số dư của ví để khớp với số tiền thực tế trong tài khoản.</div>
+            </div>
+
+            <!-- Biểu tượng Icon -->
+            <div class="mb-4">
+                <label asp-for="Icon" class="form-label fw-bold">Biểu tượng Icon (FontAwesome)</label>
+                <div class="input-group mb-2">
+                    <span class="input-group-text bg-light text-muted"><i id="iconPreview" class="fa-solid @(string.IsNullOrWhiteSpace(Model.Icon) ? "fa-wallet" : Model.Icon)"></i></span>
+                    <input asp-for="Icon" id="IconInput" class="form-control" placeholder="fa-wallet, fa-mobile-screen..." />
+                </div>
+                <span asp-validation-for="Icon" class="text-danger small"></span>
+                
+                <!-- Gợi ý icon phổ biến -->
+                <div class="small text-muted mb-1">Gợi ý biểu tượng:</div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-wallet"><i class="fa-solid fa-wallet me-1"></i> fa-wallet</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-mobile-screen"><i class="fa-solid fa-mobile-screen me-1"></i> fa-mobile-screen</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-building-columns"><i class="fa-solid fa-building-columns me-1"></i> fa-building-columns</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-piggy-bank"><i class="fa-solid fa-piggy-bank me-1"></i> fa-piggy-bank</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-credit-card"><i class="fa-solid fa-credit-card me-1"></i> fa-credit-card</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-money-bill-wave"><i class="fa-solid fa-money-bill-wave me-1"></i> fa-money-bill-wave</button>
+                </div>
+            </div>
+
+            <!-- Nút bấm -->
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="fa-solid fa-check me-1"></i> Lưu Thay Đổi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        document.querySelectorAll('.icon-select-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const icon = this.getAttribute('data-icon');
+                document.getElementById('IconInput').value = icon;
+                document.getElementById('iconPreview').className = `fa-solid ${icon}`;
+            });
+        });
+
+        document.getElementById('IconInput').addEventListener('input', function () {
+            const icon = this.value.trim();
+            document.getElementById('iconPreview').className = `fa-solid ${icon || 'fa-wallet'}`;
+        });
+    </script>
+}

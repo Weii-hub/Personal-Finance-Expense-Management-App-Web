@@ -27,6 +27,14 @@
         </div>
     }
 
+    @if (TempData["ErrorMessage"] is string error)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> @error
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
     <!-- 2 Thẻ Tổng Quan -->
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-md-4">
@@ -133,6 +141,12 @@
                                 <td class="text-end">
                                     <a asp-controller="Transactions" asp-action="Create" asp-route-walletId="@item.Id" class="btn btn-sm btn-outline-primary me-1" title="Tạo giao dịch với ví này">
                                         <i class="fa-solid fa-plus me-1"></i> Ghi chép
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary me-1" title="Chỉnh sửa ví">
+                                        <i class="fa-solid fa-pen-to-square me-1"></i> Sửa
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" title="Xóa ví">
+                                        <i class="fa-solid fa-trash-can me-1"></i> Xóa
                                     </a>
                                 </td>
                             </tr>
