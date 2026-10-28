@@ -1,25 +1,36 @@
-@model IEnumerable<PersonalFinanceApp.Models.ApplicationUser>
+@model IEnumerable<PersonalFinanceApp.Models.ViewModels.AdminUserViewModel>
 
 @{
     ViewData["Title"] = "Trang Quản Trị Hệ Thống";
+    string currentSearch = ViewBag.Search as string ?? "";
+    string currentStatus = ViewBag.Status as string ?? "";
 }
 
 <div class="container mt-4 mb-5">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
             <h2 class="fw-bold mb-1"><i class="fa-solid fa-shield-halved text-danger me-2"></i> Trang Quản Trị (Admin Panel)</h2>
-            <p class="text-muted mb-0">Theo dõi toàn bộ hoạt động hệ thống và quản lý tài khoản người dùng.</p>
+            <p class="text-muted mb-0">Theo dõi toàn bộ hoạt động hệ thống, tìm kiếm, kiểm soát bảo mật và quản lý người dùng.</p>
         </div>
         <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
             <i class="fa-solid fa-house me-1"></i> Về Trang chủ
         </a>
     </div>
 
+    <!-- Thông báo Success / Error -->
     @if (TempData["SuccessMessage"] is string msg)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm" role="alert">
             <i class="fa-solid fa-circle-check me-2"></i> @msg
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] is string err)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> @err
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
         </div>
     }
@@ -27,88 +38,218 @@
     <!-- 4 Thẻ chỉ số hệ thống -->
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-md-3">
-            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border: 2px solid #e0e7ff !important;">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="background: #ffffff; border: 2px solid #e0e7ff !important;">
                 <small class="text-muted text-uppercase fw-bold">Tổng Người Dùng</small>
                 <h3 class="fw-bold text-primary mt-1 mb-0"><i class="fa-solid fa-users me-2"></i>@ViewBag.TotalUsers</h3>
             </div>
         </div>
         <div class="col-sm-6 col-md-3">
-            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border: 2px solid #e6fcf5 !important;">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="background: #ffffff; border: 2px solid #e6fcf5 !important;">
                 <small class="text-muted text-uppercase fw-bold">Tổng Ví Khởi Tạo</small>
                 <h3 class="fw-bold text-success mt-1 mb-0"><i class="fa-solid fa-wallet me-2"></i>@ViewBag.TotalWallets</h3>
             </div>
         </div>
         <div class="col-sm-6 col-md-3">
-            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border: 2px solid #fff3bf !important;">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="background: #ffffff; border: 2px solid #fff3bf !important;">
                 <small class="text-muted text-uppercase fw-bold">Lượt Giao Dịch</small>
                 <h3 class="fw-bold text-warning mt-1 mb-0"><i class="fa-solid fa-receipt me-2"></i>@ViewBag.TotalTransactions</h3>
             </div>
         </div>
         <div class="col-sm-6 col-md-3">
-            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="border: 2px solid #ffe3e3 !important;">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="background: #ffffff; border: 2px solid #ffe3e3 !important;">
                 <small class="text-muted text-uppercase fw-bold">Danh Mục Hệ Thống</small>
                 <h3 class="fw-bold text-danger mt-1 mb-0"><i class="fa-solid fa-tags me-2"></i>@ViewBag.TotalCategories</h3>
             </div>
         </div>
     </div>
 
+    <!-- Khung Tìm kiếm & Bộ lọc người dùng -->
+    <div class="card border-0 rounded-4 shadow-sm p-3 mb-4" style="background: #ffffff; border: 2px solid #ffd3b6 !important;">
+        <form method="get" asp-action="Index" class="row g-2 align-items-center">
+            <div class="col-md-6 col-lg-7">
+                <div class="input-group">
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" name="search" value="@currentSearch" class="form-control" placeholder="Tìm theo Họ tên hoặc Email người dùng..." />
+                </div>
+            </div>
+            <div class="col-md-3 col-lg-3">
+                <select name="status" class="form-select">
+                    <option value="" selected="@(string.IsNullOrEmpty(currentStatus))">-- Tất cả trạng thái --</option>
+                    <option value="active" selected="@(currentStatus == "active")">🟢 Đang hoạt động</option>
+                    <option value="locked" selected="@(currentStatus == "locked")">🔴 Đã bị khóa</option>
+                </select>
+            </div>
+            <div class="col-md-3 col-lg-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fa-solid fa-filter me-1"></i> Lọc
+                </button>
+                @if (!string.IsNullOrEmpty(currentSearch) || !string.IsNullOrEmpty(currentStatus))
+                {
+                    <a asp-action="Index" class="btn btn-outline-secondary" title="Xóa lọc">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+
     <!-- Bảng danh sách người dùng -->
-    <div class="card border-0 rounded-4 shadow-sm p-4" style="border: 2px solid #ffe0d8 !important;">
-        <h5 class="fw-bold mb-3"><i class="fa-solid fa-user-gear me-2 text-primary"></i> Danh Sách Tài Khoản Người Dùng</h5>
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Họ và Tên</th>
-                        <th>Email</th>
-                        <th>Ngày Tham Gia</th>
-                        <th>Trạng Thái</th>
-                        <th class="text-end">Hành Động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var user in Model)
-                    {
-                        var isLocked = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow;
+    <div class="card border-0 rounded-4 shadow-sm p-4" style="background: #ffffff; border: 2px solid #ffe0d8 !important;">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="fa-solid fa-user-gear me-2 text-primary"></i> Danh Sách Tài Khoản Người Dùng (@Model.Count())</h5>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="fa-solid fa-user-slash fa-3x mb-3 text-secondary opacity-50"></i>
+                <h6>Không tìm thấy tài khoản người dùng phù hợp.</h6>
+                <a asp-action="Index" class="btn btn-sm btn-outline-primary mt-2">Xem tất cả tài khoản</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <td>
-                                <div class="fw-bold text-dark">
-                                    <i class="fa-solid fa-circle-user text-secondary me-2"></i>@user.FullName
-                                </div>
-                            </td>
-                            <td><code>@user.Email</code></td>
-                            <td>@user.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>
-                                @if (isLocked)
-                                {
-                                    <span class="badge bg-danger rounded-pill"><i class="fa-solid fa-lock me-1"></i> Đã bị khóa</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-success rounded-pill"><i class="fa-solid fa-circle-check me-1"></i> Hoạt động</span>
-                                }
-                            </td>
-                            <td class="text-end">
-                                <form asp-action="ToggleLockout" asp-route-id="@user.Id" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    @if (isLocked)
+                            <th>Họ và Tên</th>
+                            <th>Email</th>
+                            <th>Dữ Liệu Cá Nhân</th>
+                            <th>Ngày Tham Gia</th>
+                            <th>Trạng Thái</th>
+                            <th class="text-end">Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="p-2 rounded-circle me-2 text-center" style="width: 36px; height: 36px; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fa-solid @(user.IsAdmin ? "fa-shield-halved" : "fa-circle-user")"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">
+                                                @user.FullName
+                                                @if (user.IsAdmin)
+                                                {
+                                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill ms-1 small">Admin</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><code>@user.Email</code></td>
+                                <td>
+                                    <span class="badge bg-light text-dark border me-1">
+                                        <i class="fa-solid fa-wallet text-success me-1"></i>@user.WalletCount ví
+                                    </span>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="fa-solid fa-receipt text-primary me-1"></i>@user.TransactionCount GD
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">@user.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                                </td>
+                                <td>
+                                    @if (user.IsLocked)
                                     {
-                                        <button type="submit" class="btn btn-sm btn-outline-success">
-                                            <i class="fa-solid fa-lock-open me-1"></i> Mở khóa
-                                        </button>
+                                        <span class="badge bg-danger rounded-pill px-3 py-2">
+                                            <i class="fa-solid fa-lock me-1"></i> Đã bị khóa
+                                        </span>
                                     }
                                     else
                                     {
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn có chắc chắn muốn khóa tài khoản này?');">
-                                            <i class="fa-solid fa-ban me-1"></i> Khóa tài khoản
-                                        </button>
+                                        <span class="badge bg-success rounded-pill px-3 py-2">
+                                            <i class="fa-solid fa-circle-check me-1"></i> Hoạt động
+                                        </span>
                                     }
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                                </td>
+                                <td class="text-end">
+                                    @if (user.IsCurrentAdmin)
+                                    {
+                                        <!-- Bảo vệ: Admin đang đăng nhập không thể tự khóa hoặc xóa chính mình -->
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2">
+                                            <i class="fa-solid fa-user-check me-1"></i> Quản trị viên hiện tại
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <!-- Nút Khóa / Mở khóa -->
+                                        <form asp-action="ToggleLockout" asp-route-id="@user.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            @if (user.IsLocked)
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Mở khóa tài khoản">
+                                                    <i class="fa-solid fa-lock-open me-1"></i> Mở khóa
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Khóa tài khoản" onclick="return confirm('Bạn có chắc chắn muốn tạm khóa tài khoản @user.Email?');">
+                                                    <i class="fa-solid fa-ban me-1"></i> Khóa
+                                                </button>
+                                            }
+                                        </form>
+
+                                        <!-- Nút Đặt lại Mật khẩu -->
+                                        <button type="button" class="btn btn-sm btn-outline-warning text-dark ms-1" data-bs-toggle="modal" data-bs-target="#resetModal_@user.Id" title="Đặt lại mật khẩu">
+                                            <i class="fa-solid fa-key me-1"></i> Reset
+                                        </button>
+
+                                        <!-- Nút Xóa tài khoản -->
+                                        @if (!user.IsAdmin)
+                                        {
+                                            <form asp-action="DeleteUser" asp-route-id="@user.Id" method="post" class="d-inline" onsubmit="return confirm('CẢNH BÁO NGUY HIỂM: Bạn có chắc chắn muốn xóa vĩnh viễn tài khoản @user.Email và toàn bộ ví, giao dịch của họ? Thao tác này không thể hoàn tác!');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary text-danger ms-1" title="Xóa tài khoản rác/spam">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        }
+
+                                        <!-- Modal Reset Password cho User -->
+                                        <div class="modal fade" id="resetModal_@user.Id" tabindex="-1" aria-labelledby="resetModalLabel_@user.Id" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered text-start">
+                                                <div class="modal-content rounded-4 border-0 shadow">
+                                                    <form asp-action="ResetPassword" method="post">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@user.Id" />
+                                                        <div class="modal-header border-bottom-0 pb-0">
+                                                            <h5 class="modal-title fw-bold" id="resetModalLabel_@user.Id">
+                                                                <i class="fa-solid fa-key text-warning me-2"></i> Đặt Lại Mật Khẩu
+                                                            </h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p class="text-muted small mb-3">
+                                                                Đặt lại mật khẩu đăng nhập cho tài khoản: <strong>@user.Email</strong> (@user.FullName).
+                                                            </p>
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold small">Mật khẩu mới (Tối thiểu 6 ký tự)</label>
+                                                                <input type="text" name="newPassword" class="form-control" value="Reset@2026" required minlength="6" />
+                                                                <div class="form-text small text-muted">Mật khẩu mặc định gợi ý là: <code>Reset@2026</code>. Bạn có thể thay đổi trước khi xác nhận.</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer border-top-0 pt-0">
+                                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                                                            <button type="submit" class="btn btn-warning text-dark fw-bold">
+                                                                <i class="fa-solid fa-check me-1"></i> Xác Nhận Đặt Lại
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     </div>
 </div>
