@@ -21,7 +21,7 @@
             <div class="mb-3">
                 <label asp-for="TargetAmount" class="form-label fw-semibold"></label>
                 <div class="input-group">
-                    <input asp-for="TargetAmount" class="form-control" type="number" min="1" step="1000" placeholder="10000000" />
+                    <input asp-for="TargetAmount" class="form-control" type="number" min="1000" step="any" placeholder="10000000" />
                     <span class="input-group-text">VNĐ</span>
                 </div>
                 <span asp-validation-for="TargetAmount" class="text-danger small"></span>

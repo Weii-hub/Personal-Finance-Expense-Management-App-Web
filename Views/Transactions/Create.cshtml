@@ -28,7 +28,7 @@
                 <label asp-for="Amount" class="form-label fw-bold">Số tiền (VNĐ) <span class="text-danger">*</span></label>
                 <div class="input-group input-group-lg">
                     <span class="input-group-text bg-light text-primary fw-bold">₫</span>
-                    <input asp-for="Amount" id="Amount" type="number" min="1" step="1000" class="form-control fw-bold fs-4 text-primary" placeholder="0" autofocus required />
+                    <input asp-for="Amount" id="Amount" type="number" min="1000" step="any" class="form-control fw-bold fs-4 text-primary" placeholder="0" autofocus required />
                 </div>
                 <span asp-validation-for="Amount" class="text-danger small"></span>
             </div>
