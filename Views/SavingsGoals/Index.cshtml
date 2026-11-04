@@ -1,0 +1,111 @@
+@model IEnumerable<PersonalFinanceApp.Models.SavingsGoal>
+@{
+    ViewData["Title"] = "Mục tiêu tiết kiệm";
+    var goals = Model.ToList();
+    var totalTarget = goals.Sum(g => g.TargetAmount);
+    var totalSaved = goals.Sum(g => g.CurrentAmount);
+    var completedCount = goals.Count(g => g.IsCompleted);
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="fa-solid fa-bullseye text-primary me-2"></i>Mục tiêu tiết kiệm</h2>
+            <p class="text-muted mb-0">Theo dõi kế hoạch và từng bước tiến gần hơn đến mục tiêu của bạn.</p>
+        </div>
+        <a asp-action="Create" class="btn btn-primary rounded-pill px-4">
+            <i class="fa-solid fa-plus me-1"></i> Tạo mục tiêu
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <div class="text-muted small">Tổng mục tiêu</div>
+                <div class="fs-4 fw-bold">@totalTarget.ToString("N0") đ</div>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <div class="text-muted small">Đã tiết kiệm</div>
+                <div class="fs-4 fw-bold text-success">@totalSaved.ToString("N0") đ</div>
+            </div></div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <div class="text-muted small">Mục tiêu hoàn thành</div>
+                <div class="fs-4 fw-bold">@completedCount / @goals.Count</div>
+            </div></div>
+        </div>
+    </div>
+
+    @if (!goals.Any())
+    {
+        <div class="card border-0 shadow-sm text-center py-5">
+            <div class="card-body">
+                <i class="fa-solid fa-piggy-bank fa-3x text-primary mb-3"></i>
+                <h5 class="fw-bold">Bạn chưa có mục tiêu tiết kiệm nào</h5>
+                <p class="text-muted">Tạo mục tiêu đầu tiên để bắt đầu theo dõi khoản tiết kiệm của mình.</p>
+                <a asp-action="Create" class="btn btn-primary rounded-pill px-4">Tạo mục tiêu đầu tiên</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var goal in goals)
+            {
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                                <div>
+                                    <h5 class="fw-bold mb-1">@goal.Name</h5>
+                                    <small class="text-muted">
+                                        @(goal.TargetDate.HasValue ? $"Dự kiến: {goal.TargetDate.Value.ToString("dd/MM/yyyy")}" : "Chưa đặt ngày hoàn thành")
+                                    </small>
+                                </div>
+                                @if (goal.IsCompleted)
+                                {
+                                    <span class="badge bg-success rounded-pill"><i class="fa-solid fa-check me-1"></i>Hoàn thành</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary-subtle text-primary rounded-pill">@goal.ProgressPercentage.ToString("0.#")%</span>
+                                }
+                            </div>
+                            <div class="d-flex justify-content-between small mb-2">
+                                <span class="text-muted">Đã có: <strong class="text-success">@goal.CurrentAmount.ToString("N0") đ</strong></span>
+                                <span class="text-muted">Mục tiêu: <strong>@goal.TargetAmount.ToString("N0") đ</strong></span>
+                            </div>
+                            <div class="progress mb-2" role="progressbar" aria-label="Tiến độ tiết kiệm" aria-valuenow="@goal.ProgressPercentage" aria-valuemin="0" aria-valuemax="100" style="height: 12px;">
+                                <div class="progress-bar @(goal.IsCompleted ? "bg-success" : "")" style="width: @goal.ProgressPercentage.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                            </div>
+                            <div class="small text-muted mb-3">
+                                @(goal.IsCompleted ? "Bạn đã đạt mục tiêu này!" : $"Còn cần {goal.RemainingAmount.ToString("N0")} đ")
+                            </div>
+                            <a asp-action="Details" asp-route-id="@goal.Id" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                Xem chi tiết <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

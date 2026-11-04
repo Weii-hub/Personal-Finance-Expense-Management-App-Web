@@ -22,8 +22,7 @@
                 <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
                     <span class="me-2">💸</span> CashFlow
                 </a>
-                <button class="navbar-toggler border-0 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar"
-                        aria-expanded="false" aria-label="Toggle navigation" style="background-color: rgba(255,255,255,0.35);">
+                <button class="navbar-toggler border-0 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation" style="background-color: rgba(255,255,255,0.35);">
                     <i class="fa-solid fa-bars text-white"></i>
                 </button>
                 <div class="navbar-collapse collapse justify-content-between" id="mainNavbar">
@@ -55,6 +54,11 @@
                                     <i class="fa-solid fa-chart-pie me-1 text-info"></i> Biểu đồ
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="SavingsGoals" asp-action="Index">
+                                    <i class="fa-solid fa-bullseye me-1 text-primary"></i> Mục tiêu tiết kiệm
+                                </a>
+                            </li>
                             @if (User.IsInRole("Admin"))
                             {
                                 <li class="nav-item">
@@ -65,8 +69,6 @@
                             }
                         }
                     </ul>
-
-                    <!-- Phía bên phải: Đăng nhập / Đăng xuất (Issue #14) -->
                     <ul class="navbar-nav align-items-lg-center">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
@@ -102,25 +104,22 @@
             </div>
         </nav>
     </header>
-
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
-
     <footer class="footer text-muted mt-5 py-4 text-center">
         <div class="container border-0 shadow-none bg-transparent">
             <p class="mb-1 text-muted">
                 Made with <i class="fa-solid fa-heart text-danger"></i> by <strong>Nhóm 12</strong> &bull; Đề tài Quản lý Chi tiêu Cá nhân
             </p>
             <small class="text-secondary">
-                &copy; 2026 - CashFlow - 
+                &copy; 2026 - CashFlow -
                 <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-decoration-none text-muted">Chính sách & Quyền riêng tư</a>
             </small>
         </div>
     </footer>
-
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

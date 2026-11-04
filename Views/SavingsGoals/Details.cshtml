@@ -1,0 +1,87 @@
+@model PersonalFinanceApp.Models.SavingsGoal
+@{
+    ViewData["Title"] = "Chi tiết mục tiêu";
+}
+
+<div class="container py-4" style="max-width: 850px;">
+    <div class="mb-4">
+        <a asp-action="Index" class="text-decoration-none"><i class="fa-solid fa-arrow-left me-1"></i> Danh sách mục tiêu</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4 p-md-5">
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                    <h2 class="fw-bold mb-1">@Model.Name</h2>
+                    <p class="text-muted mb-0">
+                        @(Model.TargetDate.HasValue ? $"Ngày dự kiến: {Model.TargetDate.Value:dd/MM/yyyy}" : "Chưa đặt ngày hoàn thành")
+                    </p>
+                </div>
+                @if (Model.IsCompleted)
+                {
+                    <span class="badge bg-success rounded-pill p-2"><i class="fa-solid fa-check me-1"></i>Đã hoàn thành</span>
+                }
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-2">
+                <div>
+                    <div class="text-muted small">Số tiền đã tiết kiệm</div>
+                    <div class="display-6 fw-bold text-success">@Model.CurrentAmount.ToString("N0") <small class="fs-6">đ</small></div>
+                </div>
+                <div class="text-md-end">
+                    <div class="text-muted small">Mục tiêu</div>
+                    <div class="fs-4 fw-semibold">@Model.TargetAmount.ToString("N0") đ</div>
+                </div>
+            </div>
+            <div class="progress mb-2" role="progressbar" aria-label="Tiến độ tiết kiệm" aria-valuenow="@Model.ProgressPercentage" aria-valuemin="0" aria-valuemax="100" style="height: 16px;">
+                <div class="progress-bar @(Model.IsCompleted ? "bg-success" : "")" style="width: @Model.ProgressPercentage.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div>
+            </div>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>@Model.ProgressPercentage.ToString("0.#")% hoàn thành</span>
+                <span>@(Model.IsCompleted ? "Đã đạt mục tiêu" : $"Còn {Model.RemainingAmount.ToString("N0")} đ")</span>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.IsCompleted)
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-circle-plus text-success me-2"></i>Thêm tiền vào quỹ</h5>
+                <form asp-action="AddFunds" asp-route-id="@Model.Id" method="post" class="row g-2 align-items-end">
+                    @Html.AntiForgeryToken()
+                    <div class="col-md-8">
+                        <label for="amount" class="form-label">Số tiền muốn thêm (VNĐ)</label>
+                        <input id="amount" name="amount" type="number" min="1" step="1000" class="form-control" placeholder="Nhập số tiền" required />
+                    </div>
+                    <div class="col-md-4 d-grid">
+                        <button type="submit" class="btn btn-success"><i class="fa-solid fa-plus me-1"></i> Nạp vào mục tiêu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary rounded-pill px-4"><i class="fa-solid fa-pen me-1"></i> Chỉnh sửa</a>
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa mục tiêu này?');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-danger rounded-pill px-4"><i class="fa-solid fa-trash me-1"></i> Xóa mục tiêu</button>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,45 @@
+@model PersonalFinanceApp.Models.SavingsGoal
+@{
+    ViewData["Title"] = "Chỉnh sửa mục tiêu";
+}
+
+<div class="container py-4" style="max-width: 720px;">
+    <div class="mb-4">
+        <a asp-action="Details" asp-route-id="@Model.Id" class="text-decoration-none"><i class="fa-solid fa-arrow-left me-1"></i> Quay lại chi tiết</a>
+        <h2 class="fw-bold mt-3">Chỉnh sửa mục tiêu</h2>
+    </div>
+    <div class="card border-0 shadow-sm"><div class="card-body p-4">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <input asp-for="CurrentAmount" type="hidden" />
+            <input asp-for="UserId" type="hidden" />
+            <input asp-for="CreatedAt" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label fw-semibold"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="TargetAmount" class="form-label fw-semibold"></label>
+                <div class="input-group">
+                    <input asp-for="TargetAmount" class="form-control" type="number" min="1" step="1000" />
+                    <span class="input-group-text">VNĐ</span>
+                </div>
+                <span asp-validation-for="TargetAmount" class="text-danger small"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="TargetDate" class="form-label fw-semibold"></label>
+                <input asp-for="TargetDate" class="form-control" type="date" />
+                <span asp-validation-for="TargetDate" class="text-danger small"></span>
+            </div>
+            <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu thay đổi</button>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-light rounded-pill px-4">Hủy</a>
+        </form>
+    </div></div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
