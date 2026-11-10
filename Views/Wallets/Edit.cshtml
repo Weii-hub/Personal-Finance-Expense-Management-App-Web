@@ -2,13 +2,14 @@
 
 @{
     ViewData["Title"] = "Chỉnh Sửa Ví";
+    var isNegative = Model.InitialBalance < 0;
 }
 
-<div class="container mt-4 mb-5" style="max-width: 600px;">
+<div class="container mt-4 mb-5" style="max-width: 620px;">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <h2 class="mb-1"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Chỉnh Sửa Ví</h2>
-            <p class="text-muted mb-0">Cập nhật tên gọi, biểu tượng hoặc số dư cho chiếc ví của bạn.</p>
+            <p class="text-muted mb-0">Cập nhật tên gọi và biểu tượng hiển thị cho chiếc ví của bạn.</p>
         </div>
         <a asp-action="Index" class="btn btn-outline-secondary">
             <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
@@ -16,9 +17,10 @@
     </div>
 
     <div class="card border-0 rounded-4 shadow-sm p-4" style="background: #ffffff; border: 2px solid #ffe0d8 !important;">
-        <form asp-action="Edit" method="post">
+        <form asp-action="Edit" method="post" autocomplete="off">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="InitialBalance" />
 
             <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
@@ -32,15 +34,37 @@
                 <span asp-validation-for="Name" class="text-danger small"></span>
             </div>
 
-            <!-- Số dư ban đầu -->
-            <div class="mb-3">
-                <label asp-for="InitialBalance" class="form-label fw-bold">Số dư hiện tại / ban đầu (VNĐ) <span class="text-danger">*</span></label>
-                <div class="input-group input-group-lg">
-                    <span class="input-group-text bg-light text-primary fw-bold">₫</span>
-                    <input asp-for="InitialBalance" type="number" step="1000" class="form-control fw-bold fs-5 text-primary" required />
+            <!-- Khối hiển thị số dư khả dụng hiện tại (Khóa sửa trực tiếp để bảo vệ tính toàn vẹn dữ liệu) -->
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-muted text-uppercase mb-1">
+                    <i class="fa-solid fa-lock me-1 text-secondary"></i> Số dư khả dụng hiện tại (Chỉ đọc)
+                </label>
+                <div class="p-3 rounded-4 border d-flex flex-wrap justify-content-between align-items-center gap-2" style="background: @(isNegative ? "#fff5f5" : "#f8f9fa"); border-color: @(isNegative ? "#ffc9c9" : "#dee2e6") !important;">
+                    <div>
+                        <div class="fs-4 fw-bold @(isNegative ? "text-danger" : "text-success") mb-0">
+                            @Model.InitialBalance.ToString("N0") <small class="fs-6">đ</small>
+                        </div>
+                        @if (isNegative)
+                        {
+                            <span class="badge bg-danger rounded-pill small mt-1">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Ví đang bị âm số dư
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success-subtle text-success rounded-pill small mt-1">
+                                <i class="fa-solid fa-circle-check me-1"></i> Số dư bình thường
+                            </span>
+                        }
+                    </div>
+                    <a asp-controller="Transactions" asp-action="Create" asp-route-walletId="@Model.Id" class="btn btn-outline-primary rounded-pill px-3 py-2 btn-sm fw-semibold shadow-sm">
+                        <i class="fa-solid fa-plus me-1"></i> Nạp tiền / Ghi thu
+                    </a>
                 </div>
-                <span asp-validation-for="InitialBalance" class="text-danger small"></span>
-                <div class="form-text text-muted small">Bạn có thể điều chỉnh số dư của ví để khớp với số tiền thực tế trong tài khoản.</div>
+                <div class="form-text text-muted small mt-2">
+                    <i class="fa-solid fa-shield-halved text-primary me-1"></i>
+                    <strong>Nguyên tắc toàn vẹn dữ liệu:</strong> Số dư ví được quản lý tự động theo lịch sử Thu/Chi. Để tăng số dư (hoặc bù tiền khi ví âm), vui lòng tạo một <strong>giao dịch Thu nhập</strong> để đảm bảo báo cáo tài chính luôn chính xác và không bị cộng dồn ảo.
+                </div>
             </div>
 
             <!-- Biểu tượng Icon -->

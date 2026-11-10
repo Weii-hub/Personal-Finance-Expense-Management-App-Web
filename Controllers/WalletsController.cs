@@ -83,7 +83,10 @@ namespace PersonalFinanceApp.Controllers
             {
                 existingWallet.Name = (wallet.Name ?? string.Empty).Trim();
                 existingWallet.Icon = string.IsNullOrWhiteSpace(wallet.Icon) ? "fa-wallet" : wallet.Icon.Trim();
-                existingWallet.InitialBalance = wallet.InitialBalance;
+                // BẢO VỆ TÍNH TOÀN VẸN DỮ LIỆU (DATA INTEGRITY):
+                // Không ghi đè InitialBalance từ form sửa ví để ngăn ngừa nghịch lý "cộng dồn ảo" (Double Counting)
+                // khi người dùng sau đó xóa hoặc sửa các giao dịch chi tiêu trong quá khứ.
+                // Mọi biến động số dư phải được thực hiện thông qua Sổ Giao Dịch chuẩn kế toán.
 
                 await _context.SaveChangesAsync();
                 TempData["SuccessMessage"] = $"Đã cập nhật thông tin ví '{existingWallet.Name}' thành công!";
