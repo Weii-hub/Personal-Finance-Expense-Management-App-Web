@@ -1,0 +1,59 @@
+@model IEnumerable<PersonalFinanceApp.Models.Budget>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Quản lý ngân sách";
+    var vi = CultureInfo.GetCultureInfo("vi-VN");
+}
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div><h2 class="mb-1">Quản lý ngân sách</h2><p class="text-muted mb-0">Theo dõi chi tiêu theo từng danh mục trong tháng.</p></div>
+        <a asp-action="Create" class="btn btn-primary"><i class="fa-solid fa-plus me-1"></i> Thêm ngân sách</a>
+    </div>
+    @if (TempData["SuccessMessage"] != null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
+    <form method="get" asp-action="Index" class="row g-2 align-items-end mb-4">
+        <div class="col-auto"><label class="form-label">Tháng</label><select name="month" class="form-select">@for (var m = 1; m <= 12; m++) { <option value="@m" selected="@(m == (int)ViewBag.SelectedMonth)">Tháng @m</option> }</select></div>
+        <div class="col-auto"><label class="form-label">Năm</label><input name="year" type="number" min="2000" max="2100" value="@ViewBag.SelectedYear" class="form-control" /></div>
+        <div class="col-auto"><button class="btn btn-outline-primary" type="submit">Xem</button></div>
+    </form>
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">Chưa có ngân sách cho tháng này. Hãy chọn <strong>Thêm ngân sách</strong> để bắt đầu.</div>
+    }
+    else
+    {
+        <div class="row g-3">
+        @foreach (var item in Model)
+        {
+            var percent = Math.Clamp(item.UsagePercentage, 0m, 100m);
+            <div class="col-12 col-lg-6">
+                <div class="card h-100 shadow-sm @(item.IsWarning ? "border-danger" : "")">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <h5 class="card-title">@item.CategoryName</h5>
+                            <span class="badge @(item.IsWarning ? "bg-danger" : "bg-success")">@item.UsagePercentage.ToString("N1", vi)%</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1"><span>Đã chi: <strong>@item.SpentAmount.ToString("N0", vi) đ</strong></span><span>Ngân sách: <strong>@item.Amount.ToString("N0", vi) đ</strong></span></div>
+                        <div class="progress mb-2" role="progressbar" aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100" style="height: 10px;">
+                            <div class="progress-bar @(item.IsWarning ? "bg-danger" : "bg-success")" style="width: @percent.ToString(CultureInfo.InvariantCulture)%"></div>
+                        </div>
+                        @if (item.IsWarning)
+                        {
+                            <div class="alert alert-danger py-2 mb-3"><i class="fa-solid fa-triangle-exclamation me-1"></i> Cảnh báo: Bạn đã sử dụng hơn 80% ngân sách của danh mục này.</div>
+                        }
+                        else
+                        {
+                            <p class="text-muted small mb-3">Còn lại: @item.RemainingAmount.ToString("N0", vi) đ</p>
+                        }
+                        <div class="d-flex gap-2">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Sửa</a>
+                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa ngân sách này?');">
+                                @Html.AntiForgeryToken()<button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        </div>
+    }
+</div>
