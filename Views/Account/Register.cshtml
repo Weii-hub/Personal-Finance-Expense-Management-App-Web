@@ -12,7 +12,7 @@
             <p class="text-muted small">Bắt đầu hành trình làm chủ tài chính cùng <strong>CashFlow</strong>.</p>
         </div>
 
-        <form asp-action="Register" method="post">
+        <form asp-action="Register" method="post" autocomplete="off">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
@@ -21,7 +21,7 @@
                 <label asp-for="FullName" class="form-label fw-bold">Họ và tên</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-user"></i></span>
-                    <input asp-for="FullName" class="form-control form-control-lg" placeholder="Nguyễn Văn A" autofocus />
+                    <input asp-for="FullName" class="form-control form-control-lg" placeholder="Nguyễn Văn A" autocomplete="off" autofocus />
                 </div>
                 <span asp-validation-for="FullName" class="text-danger small"></span>
             </div>
@@ -31,7 +31,7 @@
                 <label asp-for="Email" class="form-label fw-bold">Email</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-envelope"></i></span>
-                    <input asp-for="Email" class="form-control form-control-lg" placeholder="name@example.com" />
+                    <input asp-for="Email" class="form-control form-control-lg" placeholder="name@example.com" autocomplete="off" />
                 </div>
                 <span asp-validation-for="Email" class="text-danger small"></span>
             </div>
@@ -41,7 +41,7 @@
                 <label asp-for="Password" class="form-label fw-bold">Mật khẩu</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
-                    <input asp-for="Password" class="form-control form-control-lg" placeholder="Ít nhất 6 ký tự" />
+                    <input asp-for="Password" class="form-control form-control-lg" placeholder="Ít nhất 6 ký tự" autocomplete="new-password" />
                 </div>
                 <span asp-validation-for="Password" class="text-danger small"></span>
             </div>
@@ -51,7 +51,7 @@
                 <label asp-for="ConfirmPassword" class="form-label fw-bold">Xác nhận mật khẩu</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-shield-halved"></i></span>
-                    <input asp-for="ConfirmPassword" class="form-control form-control-lg" placeholder="Nhập lại mật khẩu trên" />
+                    <input asp-for="ConfirmPassword" class="form-control form-control-lg" placeholder="Nhập lại mật khẩu trên" autocomplete="new-password" />
                 </div>
                 <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
             </div>

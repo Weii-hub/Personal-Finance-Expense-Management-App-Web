@@ -48,7 +48,7 @@
             </div>
         }
 
-        <form asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post">
+        <form asp-action="Login" asp-route-returnurl="@ViewData["ReturnUrl"]" method="post" autocomplete="off">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger small mb-3 fw-bold" role="alert"></div>
 
@@ -57,7 +57,7 @@
                 <label asp-for="Email" class="form-label fw-bold">Email đăng nhập</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-envelope"></i></span>
-                    <input asp-for="Email" class="form-control form-control-lg" placeholder="name@example.com" autofocus />
+                    <input asp-for="Email" class="form-control form-control-lg" placeholder="name@example.com" autocomplete="off" autofocus />
                 </div>
                 <span asp-validation-for="Email" class="text-danger small"></span>
             </div>
@@ -67,7 +67,7 @@
                 <label asp-for="Password" class="form-label fw-bold">Mật khẩu</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-lock"></i></span>
-                    <input asp-for="Password" class="form-control form-control-lg" placeholder="••••••••" />
+                    <input asp-for="Password" class="form-control form-control-lg" placeholder="••••••••" autocomplete="current-password" />
                 </div>
                 <span asp-validation-for="Password" class="text-danger small"></span>
             </div>
