@@ -5,7 +5,8 @@ using PersonalFinanceApp.Models;
 namespace PersonalFinanceApp.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/banking")]
+    [Route("api/sepay")]
     public class BankingWebhookController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

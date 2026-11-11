@@ -77,6 +77,8 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
+app.MapControllers();
+
 // Tự động khởi tạo dữ liệu mẫu và tài khoản quản trị (Issue #10, #14)
 using (var scope = app.Services.CreateScope())
 {
