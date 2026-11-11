@@ -228,3 +228,49 @@ footer, .footer {
     border-radius: 16px !important;
   }
 }
+
+
+/* ==========================================================
+   REAL-TIME LIVE SYNC ANIMATIONS
+   ========================================================== */
+@keyframes livePulseGreen {
+    0% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.12); filter: drop-shadow(0 0 8px rgba(32, 201, 151, 0.6)); }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes livePulseRed {
+    0% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.12); filter: drop-shadow(0 0 8px rgba(255, 107, 129, 0.6)); }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+
+.live-pulse-green {
+    animation: livePulseGreen 1.4s ease;
+    display: inline-block;
+}
+
+.live-pulse-red {
+    animation: livePulseRed 1.4s ease;
+    display: inline-block;
+}
+
+@keyframes liveRowSlideDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-24px);
+        background-color: rgba(32, 201, 151, 0.18);
+    }
+    50% {
+        background-color: rgba(32, 201, 151, 0.12);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+        background-color: transparent;
+    }
+}
+
+.live-row-enter {
+    animation: liveRowSlideDown 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

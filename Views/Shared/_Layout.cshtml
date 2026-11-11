@@ -128,6 +128,12 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <!-- Toast Container cho Real-time Live Sync -->
+        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 11000;" id="liveSyncToastContainer"></div>
+        <script src="~/js/live-sync.js" asp-append-version="true"></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

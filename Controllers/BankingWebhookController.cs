@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PersonalFinanceApp.Models;
+using System.Security.Claims;
 
 namespace PersonalFinanceApp.Controllers
 {
@@ -33,6 +34,108 @@ namespace PersonalFinanceApp.Controllers
                 timestamp = DateTime.UtcNow,
                 message = "Cổng Webhook đang hoạt động tốt và sẵn sàng nhận dữ liệu giao dịch ngân hàng!"
             });
+        }
+
+        // GET: /api/banking/live-sync (Endpoint thời gian thực phục vụ Auto-Sync số dư không cần F5)
+        [HttpGet("live-sync")]
+        public async Task<IActionResult> LiveSync([FromQuery] int? lastTxId)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Ok(new { isAuthenticated = false });
+                }
+
+                // Lấy danh sách ví của user
+                var wallets = await _context.Wallets
+                    .Where(w => w.UserId == userId)
+                    .Select(w => new
+                    {
+                        id = w.Id,
+                        name = w.Name,
+                        balance = w.InitialBalance,
+                        formattedBalance = w.InitialBalance.ToString("N0") + " đ",
+                        walletType = w.WalletType,
+                        bankName = w.BankName,
+                        accountNumber = w.AccountNumber
+                    })
+                    .ToListAsync();
+
+                decimal totalBalance = wallets.Sum(w => w.balance);
+
+                // Tính tổng thu nhập và chi tiêu của user
+                var incomeSum = await _context.Transactions
+                    .Where(t => t.UserId == userId && t.Category != null && t.Category.Type == 1)
+                    .SumAsync(t => (decimal?)t.Amount) ?? 0m;
+
+                var expenseSum = await _context.Transactions
+                    .Where(t => t.UserId == userId && t.Category != null && t.Category.Type == 0)
+                    .SumAsync(t => (decimal?)t.Amount) ?? 0m;
+
+                // Lấy transaction ID lớn nhất hiện tại của user
+                int currentMaxTxId = await _context.Transactions
+                    .Where(t => t.UserId == userId)
+                    .Select(t => (int?)t.Id)
+                    .MaxAsync() ?? 0;
+
+                var newTransactions = new List<object>();
+
+                // Nếu client đã có lastTxId và server có ID mới hơn -> gom các giao dịch mới nổ
+                if (lastTxId.HasValue && lastTxId.Value > 0 && currentMaxTxId > lastTxId.Value)
+                {
+                    var rawNewTxs = await _context.Transactions
+                        .Include(t => t.Category)
+                        .Include(t => t.Wallet)
+                        .Where(t => t.UserId == userId && t.Id > lastTxId.Value)
+                        .OrderByDescending(t => t.Id)
+                        .Take(10)
+                        .ToListAsync();
+
+                    foreach (var t in rawNewTxs)
+                    {
+                        bool isIncome = t.Category?.Type == 1;
+                        newTransactions.Add(new
+                        {
+                            id = t.Id,
+                            amount = t.Amount,
+                            formattedAmount = (isIncome ? "+" : "-") + t.Amount.ToString("N0") + " đ",
+                            isIncome,
+                            note = t.Note ?? "",
+                            categoryName = t.Category?.Name ?? (isIncome ? "Thu nhập từ ngân hàng" : "Chi tiêu qua ngân hàng"),
+                            categoryColor = t.Category?.Color ?? (isIncome ? "#20c997" : "#ff6b81"),
+                            categoryIcon = t.Category?.Icon ?? (isIncome ? "fa-wallet" : "fa-tag"),
+                            walletId = t.WalletId,
+                            walletName = t.Wallet?.Name ?? "Ví",
+                            walletIcon = t.Wallet?.Icon ?? "fa-wallet",
+                            date = t.TransactionDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                        });
+                    }
+                }
+
+                return Ok(new
+                {
+                    isAuthenticated = true,
+                    latestTxId = currentMaxTxId,
+                    hasNew = newTransactions.Count > 0,
+                    newTransactions,
+                    wallets,
+                    totalBalance,
+                    formattedTotalBalance = totalBalance.ToString("N0") + " đ",
+                    totalIncome = incomeSum,
+                    formattedTotalIncome = "+" + incomeSum.ToString("N0") + " đ",
+                    totalExpense = expenseSum,
+                    formattedTotalExpense = expenseSum.ToString("N0") + " đ",
+                    netBalance = incomeSum - expenseSum,
+                    formattedNetBalance = (incomeSum - expenseSum >= 0 ? "+" : "") + (incomeSum - expenseSum).ToString("N0") + " đ"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi tại LiveSync endpoint");
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
         }
 
         // POST: /api/banking/webhook, /api/banking, /api/sepay/webhook, /api/sepay, /webhook (Cổng nhận Webhook từ SePAY)

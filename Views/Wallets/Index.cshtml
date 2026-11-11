@@ -80,7 +80,7 @@
                     </div>
                     <div>
                         <small class="text-muted text-uppercase fw-bold">Tổng Tài Sản Khả Dụng</small>
-                        <h3 class="mb-0 @(totalBalance >= 0 ? "text-success" : "text-danger") fw-bold mt-1">
+                        <h3 id="total-available-balance" class="mb-0 @(totalBalance >= 0 ? "text-success" : "text-danger") fw-bold mt-1">
                             @totalBalance.ToString("N0") đ
                         </h3>
                     </div>

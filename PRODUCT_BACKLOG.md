@@ -466,6 +466,18 @@ Một PBI chỉ được chuyển sang trạng thái **Done** khi thỏa mãn to
   * Trích ví tiền mặt: hiển thị alert nhắc nhở bỏ heo đất/phong bì riêng.
   * Trích ví ngân hàng: bắt buộc nhập mã PIN 6 số xác thực trước khi trừ tiền.
 
+#### PBI-20: Real-time Live Sync & Web Audio Chime (Zero-Reload Banking Notification)
+* **Phân hệ**: Tích hợp Ngân hàng & Trải nghiệm Người dùng (UX)
+* **GitHub Issue**: Resolves #23
+* **Độ ưu tiên**: Should Have | **Điểm ước lượng**: 3 SP | **Sprint**: Sprint 4 | **Trạng thái**: Done
+* **User Story**:
+  > Là một người dùng hiện đại, tôi muốn khi có biến động số dư ngân hàng nổ từ SePAY hoặc Sandbox Simulator, màn hình web tự động nhảy số dư ví và chèn dòng giao dịch mới ngay lập tức mà không cần bấm F5, đồng thời hiển thị thông báo Toast và chuông báo nhẹ nhàng.
+* **Đặc tả kỹ thuật**:
+  * Endpoint API: `GET /api/banking/live-sync?lastTxId={id}` truy vấn biến động theo thời gian thực.
+  * Tự động cập nhật số dư ví trên `Views/Wallets/Index.cshtml` kèm hiệu ứng `live-pulse-green` / `live-pulse-red`.
+  * Tự động trượt dòng giao dịch mới vào đầu bảng `Views/Transactions/Index.cshtml` kèm cập nhật 3 thẻ tổng thu, chi, ròng.
+  * Âm thanh chuông báo hai cung (D5 - A5) phát bằng Web Audio API không phụ thuộc file âm thanh ngoài.
+
 ---
 ## 4. MA TRẬN TRUY XUẤT YÊU CẦU (TRACEABILITY MATRIX)
 
@@ -492,6 +504,7 @@ Ma trận đối chiếu giữa các User Story trong Product Backlog và 15 Iss
 | **PBI-17** | Hệ thống Mã PIN 6 số & Công tắc phân quyền | Issue #20 | Commit `883066b`, `bdf1099` | **Đã nghiệm thu (Done)** |
 | **PBI-18** | Open Banking Webhook & Sandbox Simulator | Issue #21 | Commit `883066b`, `f25a621` | **Đã nghiệm thu (Done)** |
 | **PBI-19** | Phân luồng Mục tiêu tiết kiệm & Xác thực PIN | Issue #22 | Commit `883066b` (main) | **Đã nghiệm thu (Done)** |
+| **PBI-20** | Real-time Live Sync & Web Audio Chime | Issue #23 | Commit `main` | **Đã nghiệm thu (Done)** |
 
 ---
 *Tài liệu Product Backlog này được lập theo chuẩn kỹ thuật phần mềm Scrum/Agile, phản ánh 100% hiện trạng kiến trúc và mã nguồn thực tế của đồ án CashFlow, không chứa các thành phần giả lập.*
