@@ -41,4 +41,46 @@ namespace PersonalFinanceApp.Models.ViewModels
         [Compare("Password", ErrorMessage = "Mật khẩu và xác nhận mật khẩu không khớp nhau")]
         public string ConfirmPassword { get; set; } = string.Empty;
     }
+
+    public class ForgotPasswordViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập Email tài khoản")]
+        [EmailAddress(ErrorMessage = "Địa chỉ Email không hợp lệ")]
+        [Display(Name = "Địa chỉ Email")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập Email")]
+        [EmailAddress(ErrorMessage = "Địa chỉ Email không hợp lệ")]
+        [Display(Name = "Địa chỉ Email")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Token { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập Mật khẩu mới")]
+        [StringLength(100, ErrorMessage = "Mật khẩu phải có ít nhất {2} ký tự", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu mới")]
+        public string Password { get; set; } = string.Empty;
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Xác nhận mật khẩu mới")]
+        [Compare("Password", ErrorMessage = "Mật khẩu và xác nhận mật khẩu không khớp nhau")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
+    public class ForgotPasswordApiRequest
+    {
+        public string? Email { get; set; }
+    }
+
+    public class ResetPasswordApiRequest
+    {
+        public string? Email { get; set; }
+        public string? Token { get; set; }
+        public string? NewPassword { get; set; }
+    }
 }

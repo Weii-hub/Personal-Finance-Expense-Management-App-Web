@@ -478,6 +478,19 @@ Một PBI chỉ được chuyển sang trạng thái **Done** khi thỏa mãn to
   * Tự động trượt dòng giao dịch mới vào đầu bảng `Views/Transactions/Index.cshtml` kèm cập nhật 3 thẻ tổng thu, chi, ròng.
   * Âm thanh chuông báo hai cung (D5 - A5) phát bằng Web Audio API không phụ thuộc file âm thanh ngoài.
 
+#### PBI-21: Hệ thống Khôi Phục Mật Khẩu (Forgot & Reset Password via Identity Cryptographic Token & REST API)
+* **Phân hệ**: Xác thực & Bảo mật (Identity)
+* **GitHub Issue**: Resolves #24
+* **Độ ưu tiên**: Should Have | **Điểm ước lượng**: 3 SP | **Sprint**: Sprint 4 | **Trạng thái**: Done
+* **User Story**:
+  > Là một người dùng CashFlow, tôi muốn có tính năng Quên Mật Khẩu trên giao diện web và qua RESTful API để có thể tự khôi phục mật khẩu thông qua mã Token bảo mật Identity một lần, bảo vệ tài khoản theo tiêu chuẩn OWASP mà không cần can thiệp từ quản trị viên.
+* **Đặc tả kỹ thuật**:
+  * ViewModels: `ForgotPasswordViewModel`, `ResetPasswordViewModel`, `ForgotPasswordApiRequest`, `ResetPasswordApiRequest`.
+  * MVC Views: `Views/Account/ForgotPassword.cshtml`, `Views/Account/ForgotPasswordConfirmation.cshtml`, `Views/Account/ResetPassword.cshtml`.
+  * Liên kết "Quên mật khẩu?" trên `Views/Account/Login.cshtml`.
+  * Identity Cryptographic Token: `GeneratePasswordResetTokenAsync` & `ResetPasswordAsync`.
+  * RESTful APIs: `POST /api/account/forgot-password` & `POST /api/account/reset-password`.
+
 ---
 ## 4. MA TRẬN TRUY XUẤT YÊU CẦU (TRACEABILITY MATRIX)
 
@@ -505,6 +518,7 @@ Ma trận đối chiếu giữa các User Story trong Product Backlog và 15 Iss
 | **PBI-18** | Open Banking Webhook & Sandbox Simulator | Issue #21 | Commit `883066b`, `f25a621` | **Đã nghiệm thu (Done)** |
 | **PBI-19** | Phân luồng Mục tiêu tiết kiệm & Xác thực PIN | Issue #22 | Commit `883066b` (main) | **Đã nghiệm thu (Done)** |
 | **PBI-20** | Real-time Live Sync & Web Audio Chime | Issue #23 | Commit `main` | **Đã nghiệm thu (Done)** |
+| **PBI-21** | Hệ thống Khôi Phục Mật Khẩu (Forgot & Reset Password) | Issue #24 | Commit `main` | **Đã nghiệm thu (Done)** |
 
 ---
 *Tài liệu Product Backlog này được lập theo chuẩn kỹ thuật phần mềm Scrum/Agile, phản ánh 100% hiện trạng kiến trúc và mã nguồn thực tế của đồ án CashFlow, không chứa các thành phần giả lập.*

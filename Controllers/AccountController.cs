@@ -162,6 +162,95 @@ namespace PersonalFinanceApp.Controllers
             return View(model);
         }
 
+        // GET: /Account/ForgotPassword (Issue #24)
+        public IActionResult ForgotPassword()
+        {
+            return View(new ForgotPasswordViewModel());
+        }
+
+        // POST: /Account/ForgotPassword (Tạo mã Token đặt lại mật khẩu chuẩn Identity Cryptography)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                // Theo chuẩn bảo mật OWASP: Không tiết lộ email có tồn tại hay không, nhưng hiển thị xác nhận đã xử lý
+                ViewBag.UserFound = false;
+                ViewBag.TargetEmail = model.Email;
+                return View("ForgotPasswordConfirmation");
+            }
+
+            // Sinh mã Token đặt lại mật khẩu mã hóa mật mã học (Identity Token Provider)
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            // Tạo link đặt lại mật khẩu hoàn chỉnh
+            var resetLink = Url.Action("ResetPassword", "Account", new { token, email = user.Email }, Request.Scheme);
+
+            ViewBag.UserFound = true;
+            ViewBag.TargetEmail = user.Email;
+            ViewBag.FullName = user.FullName;
+            ViewBag.ResetLink = resetLink;
+            ViewBag.Token = token;
+
+            return View("ForgotPasswordConfirmation");
+        }
+
+        // GET: /Account/ResetPassword
+        public IActionResult ResetPassword(string? token = null, string? email = null)
+        {
+            if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(email))
+            {
+                TempData["ErrorMessage"] = "Yêu cầu đặt lại mật khẩu không hợp lệ hoặc thiếu mã bảo mật.";
+                return RedirectToAction("Login");
+            }
+
+            var model = new ResetPasswordViewModel
+            {
+                Token = token,
+                Email = email
+            };
+            return View(model);
+        }
+
+        // POST: /Account/ResetPassword (Xác nhận đổi mật khẩu mới)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy tài khoản người dùng tương ứng.";
+                return RedirectToAction("Login");
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "🎉 Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới ngay bây giờ.";
+                return RedirectToAction("Login");
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
+        }
+
         // POST: /Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -176,6 +265,76 @@ namespace PersonalFinanceApp.Controllers
         public IActionResult AccessDenied()
         {
             return View();
+        }
+
+        // =========================================================================
+        // RESTful API Endpoints cho Quên Mật Khẩu & Đặt Lại Mật Khẩu (Dành cho Mobile / Postman)
+        // =========================================================================
+
+        // POST: /api/account/forgot-password
+        [HttpPost("/api/account/forgot-password")]
+        public async Task<IActionResult> ApiForgotPassword([FromBody] ForgotPasswordApiRequest? request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(new { success = false, message = "Vui lòng cung cấp địa chỉ email hợp lệ." });
+            }
+
+            var user = await _userManager.FindByEmailAsync(request.Email.Trim());
+            if (user == null)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = "Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được xử lý (Bảo mật OWASP)."
+                });
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetUrl = Url.Action("ResetPassword", "Account", new { token, email = user.Email }, Request.Scheme);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Đã tạo mã xác thực đặt lại mật khẩu thành công.",
+                email = user.Email,
+                resetToken = token,
+                resetUrl
+            });
+        }
+
+        // POST: /api/account/reset-password
+        [HttpPost("/api/account/reset-password")]
+        public async Task<IActionResult> ApiResetPassword([FromBody] ResetPasswordApiRequest? request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest(new { success = false, message = "Thiếu thông tin bắt buộc: email, token hoặc newPassword." });
+            }
+
+            if (request.NewPassword.Length < 6)
+            {
+                return BadRequest(new { success = false, message = "Mật khẩu mới phải có ít nhất 6 ký tự." });
+            }
+
+            var user = await _userManager.FindByEmailAsync(request.Email.Trim());
+            if (user == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy người dùng." });
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
+            if (result.Succeeded)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = "Đặt lại mật khẩu thành công! Tài khoản đã được cập nhật mật khẩu mới."
+                });
+            }
+
+            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { success = false, message = "Không thể đặt lại mật khẩu: " + errors });
         }
     }
 }
