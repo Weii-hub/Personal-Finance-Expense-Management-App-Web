@@ -4,6 +4,8 @@
     ViewData["Title"] = "Quản lý Ví Tiền";
     decimal totalBalance = Model.Sum(w => w.InitialBalance);
     int totalWallets = Model.Count();
+    int bankWallets = Model.Count(w => w.WalletType == 1);
+    bool hasPin = ViewBag.HasPin == true;
 }
 
 <div class="container mt-4 mb-5">
@@ -11,14 +13,33 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
             <h2 class="mb-1"><i class="fa-solid fa-wallet text-success me-2"></i> Quản Lý Ví Tiền</h2>
-            <p class="text-muted mb-0">Theo dõi chi tiết số dư các nguồn tiền mặt, tài khoản ngân hàng và ví điện tử của bạn.</p>
+            <p class="text-muted mb-0">Theo dõi chi tiết số dư tiền mặt, tài khoản ngân hàng và kiểm soát quyền Open Banking.</p>
         </div>
-        <a asp-action="Create" class="btn btn-primary btn-lg shadow-sm">
-            <i class="fa-solid fa-plus me-1"></i> Thêm ví mới
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <!-- Nút Giả Lập Sandbox Demo -->
+            <button type="button" class="btn btn-warning text-dark fw-bold rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#sandboxModal">
+                <i class="fa-solid fa-bolt me-1 text-danger"></i> Giả lập Ngân hàng (Sandbox)
+            </button>
+            <!-- Nút Quản Lý Mã PIN -->
+            <button type="button" class="btn btn-outline-dark rounded-pill px-3 shadow-sm" onclick="openPinManager()">
+                <i class="fa-solid fa-key me-1 text-primary"></i> Mã PIN: 
+                @if (hasPin)
+                {
+                    <span class="badge bg-success-subtle text-success ms-1">Đã bật</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary-subtle text-secondary ms-1">Chưa tạo</span>
+                }
+            </button>
+            <!-- Nút Thêm Ví -->
+            <a asp-action="Create" class="btn btn-primary rounded-pill px-3 shadow-sm">
+                <i class="fa-solid fa-plus me-1"></i> Thêm ví mới
+            </a>
+        </div>
     </div>
 
-    <!-- Thông báo Success / Error -->
+    <!-- Thông báo TempData -->
     @if (TempData["SuccessMessage"] is string success)
     {
         <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm" role="alert">
@@ -35,7 +56,7 @@
         </div>
     }
 
-    <!-- 2 Thẻ Tổng Quan -->
+    <!-- 3 Thẻ Tổng Quan -->
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-md-4">
             <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="background: #ffffff; border: 2px solid #e0e7ff !important;">
@@ -46,11 +67,12 @@
                     <div>
                         <small class="text-muted text-uppercase fw-bold">Tổng Số Ví</small>
                         <h3 class="mb-0 fw-bold text-primary mt-1">@totalWallets ví</h3>
+                        <small class="text-muted">(@(totalWallets - bankWallets) tiền mặt, @bankWallets ngân hàng)</small>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-md-5">
+        <div class="col-sm-6 col-md-4">
             <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="background: #ffffff; border: 2px solid @(totalBalance >= 0 ? "#e6fcf5" : "#ffe3e3") !important;">
                 <div class="d-flex align-items-center">
                     <div class="p-3 rounded-circle me-3" style="background: @(totalBalance >= 0 ? "#e6fcf5" : "#ffe3e3"); color: @(totalBalance >= 0 ? "#20c997" : "#ff6b81");">
@@ -61,12 +83,20 @@
                         <h3 class="mb-0 @(totalBalance >= 0 ? "text-success" : "text-danger") fw-bold mt-1">
                             @totalBalance.ToString("N0") đ
                         </h3>
-                        @if (totalBalance < 0)
-                        {
-                            <span class="badge bg-danger-subtle text-danger small mt-1">
-                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Tài sản tổng đang bị âm!
-                            </span>
-                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-12 col-md-4">
+            <div class="card border-0 rounded-4 shadow-sm p-3 h-100" style="background: #ffffff; border: 2px solid #fef3c7 !important;">
+                <div class="d-flex align-items-center">
+                    <div class="p-3 rounded-circle me-3" style="background: #fef3c7; color: #d97706;">
+                        <i class="fa-solid fa-shield-halved fa-xl"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Cổng Open Banking</small>
+                        <h4 class="mb-0 fw-bold text-dark mt-1">SePAY & Sandbox</h4>
+                        <small class="text-success fw-semibold"><i class="fa-solid fa-circle-check me-1"></i> Sẵn sàng kết nối</small>
                     </div>
                 </div>
             </div>
@@ -75,14 +105,19 @@
 
     <!-- Danh sách các ví -->
     <div class="card border-0 rounded-4 shadow-sm p-4" style="background: #ffffff; border: 2px solid #ffe0d8 !important;">
-        <h5 class="fw-bold mb-3"><i class="fa-solid fa-credit-card text-primary me-2"></i> Danh Sách Ví Hiện Có</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0"><i class="fa-solid fa-credit-card text-primary me-2"></i> Danh Sách Ví Hiện Có</h5>
+            <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small">
+                <i class="fa-solid fa-lock text-warning me-1"></i> Gạt công tắc yêu cầu Mã PIN bảo mật
+            </span>
+        </div>
 
         @if (!Model.Any())
         {
             <div class="text-center py-5">
                 <div class="display-3 mb-3">👛</div>
                 <h5>Bạn chưa có ví tiền nào</h5>
-                <p class="text-muted">Hãy tạo chiếc ví đầu tiên (ví dụ: Ví tiền mặt, MoMo, Techcombank) để bắt đầu ghi chép nhé!</p>
+                <p class="text-muted">Hãy tạo chiếc ví đầu tiên (ví dụ: Ví tiền mặt, MoMo, Techcombank) để bắt đầu nhé!</p>
                 <a asp-action="Create" class="btn btn-outline-primary mt-2">
                     <i class="fa-solid fa-plus me-1"></i> Tạo ví ngay
                 </a>
@@ -94,9 +129,9 @@
                 <table class="table align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Tên Ví</th>
+                            <th>Tên Ví & Phân Loại</th>
                             <th>Số Dư Khả Dụng</th>
-                            <th>Trạng Thái</th>
+                            <th style="min-width: 250px;">Phân Quyền Ví Ngân Hàng (Toggles)</th>
                             <th class="text-end">Hành Động</th>
                         </tr>
                     </thead>
@@ -106,40 +141,86 @@
                             var isNegative = item.InitialBalance < 0;
                             var iconClass = string.IsNullOrWhiteSpace(item.Icon) ? "fa-wallet" : item.Icon;
                             if (!iconClass.StartsWith("fa-")) iconClass = "fa-" + iconClass;
+                            var isBank = item.WalletType == 1;
 
-                            <tr>
+                            <tr id="wallet-row-@item.Id">
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <div class="p-2 rounded-circle me-3 text-center" style="width: 44px; height: 44px; background: #fff0f3; color: #ff6b81; display: flex; align-items: center; justify-content: center;">
+                                        <div class="p-2 rounded-circle me-3 text-center" style="width: 44px; height: 44px; background: @(isBank ? "#e0f2fe" : "#fff0f3"); color: @(isBank ? "#0284c7" : "#ff6b81"); display: flex; align-items: center; justify-content: center;">
                                             <i class="fa-solid @iconClass fa-lg"></i>
                                         </div>
                                         <div>
-                                            <div class="fw-bold text-dark fs-6">@item.Name</div>
-                                            <small class="text-muted">Biểu tượng: <code>@item.Icon</code></small>
+                                            <div class="fw-bold text-dark fs-6">
+                                                @item.Name
+                                                @if (isBank)
+                                                {
+                                                    <span class="badge bg-primary-subtle text-primary rounded-pill ms-1 small">
+                                                        <i class="fa-solid fa-building-columns me-1"></i> Ngân hàng / Điện tử
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-success-subtle text-success rounded-pill ms-1 small">
+                                                        <i class="fa-solid fa-money-bill-wave me-1"></i> Tiền mặt ngoài đời
+                                                    </span>
+                                                }
+                                            </div>
+                                            @if (isBank)
+                                            {
+                                                <small class="text-muted">
+                                                    @(string.IsNullOrWhiteSpace(item.BankName) ? "Ngân hàng" : item.BankName)
+                                                    @if (!string.IsNullOrWhiteSpace(item.AccountNumber))
+                                                    {
+                                                        <span>• Số TK: <code>@(item.AccountNumber.Length > 4 ? "****" + item.AccountNumber.Substring(item.AccountNumber.Length - 4) : item.AccountNumber)</code></span>
+                                                    }
+                                                </small>
+                                            }
+                                            else
+                                            {
+                                                <small class="text-muted">Ghi chép thu/chi thủ công</small>
+                                            }
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="@(isNegative ? "text-danger" : "text-success") fw-bold fs-5">
+                                    <span id="balance-val-@item.Id" class="@(isNegative ? "text-danger" : "text-success") fw-bold fs-5">
                                         @item.InitialBalance.ToString("N0") đ
                                     </span>
                                 </td>
                                 <td>
-                                    @if (isNegative)
+                                    @if (isBank)
                                     {
-                                        <span class="badge bg-danger rounded-pill px-3 py-2">
-                                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Bị âm tiền (Thấu chi)
-                                        </span>
+                                        <div class="d-flex flex-column gap-2 py-1">
+                                            <!-- Công tắc 1: Quyền Tiết Kiệm -->
+                                            <div class="form-check form-switch d-flex align-items-center gap-2 m-0">
+                                                <input class="form-check-input" type="checkbox" role="switch" id="switch-savings-@item.Id"
+                                                       @(item.IsSavingsAllowed ? "checked" : "")
+                                                       onchange="handleTogglePermission(@item.Id, 'savings', this)">
+                                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="switch-savings-@item.Id">
+                                                    🎯 Cho phép trích tiết kiệm
+                                                </label>
+                                            </div>
+
+                                            <!-- Công tắc 2: Quyền Biến Động Số Dư (Sync) -->
+                                            <div class="form-check form-switch d-flex align-items-center gap-2 m-0">
+                                                <input class="form-check-input" type="checkbox" role="switch" id="switch-sync-@item.Id"
+                                                       @(item.IsSyncEnabled ? "checked" : "")
+                                                       onchange="handleTogglePermission(@item.Id, 'sync', this)">
+                                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="switch-sync-@item.Id">
+                                                    ⚡ Tự động theo dõi biến động số dư
+                                                </label>
+                                            </div>
+                                        </div>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2">
-                                            <i class="fa-solid fa-circle-check me-1"></i> Hoạt động tốt
+                                        <span class="text-muted small fst-italic">
+                                            <i class="fa-solid fa-hand-holding-dollar me-1"></i> Ví tiền mặt (Quản lý tự do)
                                         </span>
                                     }
                                 </td>
                                 <td class="text-end">
-                                    <a asp-controller="Transactions" asp-action="Create" asp-route-walletId="@item.Id" class="btn btn-sm btn-outline-primary me-1" title="Tạo giao dịch với ví này">
+                                    <a asp-controller="Transactions" asp-action="Create" asp-route-walletId="@item.Id" class="btn btn-sm btn-outline-primary me-1" title="Tạo giao dịch">
                                         <i class="fa-solid fa-plus me-1"></i> Ghi chép
                                     </a>
                                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary me-1" title="Chỉnh sửa ví">
@@ -157,3 +238,325 @@
         }
     </div>
 </div>
+
+<!-- ============================================================ -->
+<!-- MODAL 1: GIẢ LẬP GIAO DỊCH NGÂN HÀNG (SANDBOX SIMULATOR)      -->
+<!-- ============================================================ -->
+<div class="modal fade" id="sandboxModal" tabindex="-1" aria-labelledby="sandboxModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark" id="sandboxModalLabel">
+                        <i class="fa-solid fa-bolt text-warning me-2"></i> Giả Lập Giao Dịch Ngân Hàng (Sandbox)
+                    </h5>
+                    <p class="text-muted small mb-0">Mô phỏng tức thì biến động số dư Open Banking để demo báo cáo</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                @{
+                    var syncableWallets = Model.Where(w => w.WalletType == 1 && w.IsSyncEnabled).ToList();
+                }
+
+                @if (!syncableWallets.Any())
+                {
+                    <div class="alert alert-warning rounded-4 border-0 p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fa-solid fa-triangle-exclamation fa-lg text-warning me-2"></i>
+                            <strong>Chưa có ví ngân hàng nào sẵn sàng!</strong>
+                        </div>
+                        <p class="small mb-0">
+                            Để kích hoạt biến động số dư tự động, bạn cần có ít nhất 1 ví loại <strong>Ngân hàng / Điện tử</strong> và đã gạt bật công tắc <strong>"⚡ Tự động theo dõi biến động số dư"</strong>.
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <form id="sandboxForm" onsubmit="executeSimulator(event)">
+                        <!-- Chọn ví -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Chọn ví nhận biến động:</label>
+                            <select id="simWalletId" class="form-select form-select-lg" required>
+                                @foreach (var w in syncableWallets)
+                                {
+                                    <option value="@w.Id">
+                                        @w.Name (@(w.BankName ?? "Ngân hàng") - Số dư: @w.InitialBalance.ToString("N0") đ)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Loại biến động -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Chiều giao dịch:</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="simDirection" id="simIn" value="in" checked>
+                                    <label class="btn btn-outline-success w-100 py-2 rounded-3 text-center fw-bold" for="simIn">
+                                        <i class="fa-solid fa-arrow-down me-1"></i> Tiền Vào (+)
+                                        <div class="small fw-normal text-muted" style="font-size: 0.75rem;">Nhận chuyển khoản</div>
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <input type="radio" class="btn-check" name="simDirection" id="simOut" value="out">
+                                    <label class="btn btn-outline-danger w-100 py-2 rounded-3 text-center fw-bold" for="simOut">
+                                        <i class="fa-solid fa-arrow-up me-1"></i> Tiền Ra (-)
+                                        <div class="small fw-normal text-muted" style="font-size: 0.75rem;">Quẹt thẻ / Chi tiêu</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Số tiền -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Số tiền (VNĐ):</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light fw-bold text-success">₫</span>
+                                <input type="number" id="simAmount" min="1000" step="any" class="form-control fw-bold fs-5" placeholder="Ví dụ: 500000" value="500000" required />
+                            </div>
+                        </div>
+
+                        <!-- Nội dung chuyển khoản -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-muted">Nội dung giao dịch (Memo / Ghi chú):</label>
+                            <input type="text" id="simContent" class="form-control" placeholder="Ví dụ: Ai đó chuyển khoản, Thanh toán cà phê Highlands..." value="Chuyển khoản thanh toán thử nghiệm" required />
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" id="btnRunSim" class="btn btn-warning text-dark fw-bold btn-lg shadow-sm">
+                                <i class="fa-solid fa-bolt me-1"></i> Kích Hoạt Biến Động Số Dư
+                            </button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL 2: THIẾT LẬP MÃ PIN 6 SỐ (SETUP PIN MODAL)              -->
+<!-- ============================================================ -->
+<div class="modal fade" id="setupPinModal" tabindex="-1" aria-labelledby="setupPinModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark" id="setupPinModalLabel">
+                        <i class="fa-solid fa-key text-primary me-2"></i> Thiết Lập Mã PIN Bảo Mật
+                    </h5>
+                    <p class="text-muted small mb-0">Mã PIN gồm 6 chữ số dùng để bảo vệ quyền ví và các giao dịch ngân hàng</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="setupPinForm" onsubmit="submitSetPin(event)">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Nhập Mã PIN mới (6 chữ số):</label>
+                        <input type="password" id="newPin" class="form-control form-control-lg text-center fw-bold fs-4" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required autofocus />
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">Xác nhận lại Mã PIN:</label>
+                        <input type="password" id="confirmNewPin" class="form-control form-control-lg text-center fw-bold fs-4" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required />
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" id="btnSavePin" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm">
+                            <i class="fa-solid fa-shield-check me-1"></i> Lưu Mã PIN Bảo Mật
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL 3: NHẬP MÃ PIN ĐỂ XÁC NHẬN THAY ĐỔI QUYỀN (VERIFY PIN)  -->
+<!-- ============================================================ -->
+<div class="modal fade" id="verifyPinModal" tabindex="-1" aria-labelledby="verifyPinModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark" id="verifyPinModalLabel">
+                        <i class="fa-solid fa-lock text-warning me-2"></i> Xác Thực Mã PIN
+                    </h5>
+                    <p class="text-muted small mb-0" id="verifyPinDesc">Vui lòng nhập mã PIN 6 số để xác nhận thay đổi</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="verifyPinForm" onsubmit="submitVerifyPin(event)">
+                    <div class="mb-4">
+                        <input type="password" id="inputPinVerify" class="form-control form-control-lg text-center fw-bold fs-3" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required autofocus />
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" id="btnConfirmPinVerify" class="btn btn-warning text-dark btn-lg rounded-pill fw-bold shadow-sm">
+                            <i class="fa-solid fa-check me-1"></i> Xác Nhận
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let pendingAction = null; // Lưu trạng thái công tắc đang chờ xác thực PIN
+        let userHasPin = @(hasPin ? "true" : "false");
+
+        function openPinManager() {
+            const setupModal = new bootstrap.Modal(document.getElementById('setupPinModal'));
+            document.getElementById('newPin').value = '';
+            document.getElementById('confirmNewPin').value = '';
+            setupModal.show();
+        }
+
+        // Khi người dùng bấm gạt công tắc phân quyền
+        function handleTogglePermission(walletId, permissionType, switchElem) {
+            const targetState = switchElem.checked;
+
+            if (!userHasPin) {
+                // Đảo lại trạng thái công tắc tạm thời
+                switchElem.checked = !targetState;
+                pendingAction = { walletId, permissionType, targetState, switchElem };
+                const setupModal = new bootstrap.Modal(document.getElementById('setupPinModal'));
+                document.getElementById('newPin').value = '';
+                document.getElementById('confirmNewPin').value = '';
+                setupModal.show();
+                return;
+            }
+
+            // Đã có mã PIN -> Mở modal yêu cầu nhập PIN xác nhận
+            switchElem.checked = !targetState; // Hoãn lại đợi nhập PIN đúng
+            pendingAction = { walletId, permissionType, targetState, switchElem };
+
+            const verifyModal = new bootstrap.Modal(document.getElementById('verifyPinModal'));
+            document.getElementById('inputPinVerify').value = '';
+            document.getElementById('verifyPinDesc').innerText = targetState
+                ? 'Nhập mã PIN 6 số để BẬT quyền này cho ví'
+                : 'Nhập mã PIN 6 số để TẮT quyền này cho ví';
+            verifyModal.show();
+        }
+
+        // Gửi thiết lập Mã PIN mới
+        async function submitSetPin(e) {
+            e.preventDefault();
+            const pin = document.getElementById('newPin').value.trim();
+            const confirmPin = document.getElementById('confirmNewPin').value.trim();
+
+            if (pin.length !== 6 || confirmPin.length !== 6) {
+                alert('Mã PIN phải bao gồm đúng 6 chữ số!');
+                return;
+            }
+            if (pin !== confirmPin) {
+                alert('Mã PIN xác nhận không khớp. Vui lòng nhập lại!');
+                return;
+            }
+
+            try {
+                const res = await fetch('/Wallets/SetPin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin, confirmPin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    userHasPin = true;
+                    bootstrap.Modal.getInstance(document.getElementById('setupPinModal')).hide();
+                    alert(data.message);
+
+                    // Nếu có công tắc đang chờ thực thi, tiếp tục gọi toggle
+                    if (pendingAction) {
+                        executeToggle(pendingAction.walletId, pendingAction.permissionType, pendingAction.targetState, pin, pendingAction.switchElem);
+                        pendingAction = null;
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert(data.message || 'Lỗi khi lưu mã PIN.');
+                }
+            } catch (err) {
+                alert('Lỗi kết nối máy chủ: ' + err);
+            }
+        }
+
+        // Gửi xác thực Mã PIN cho Toggle
+        async function submitVerifyPin(e) {
+            e.preventDefault();
+            const pin = document.getElementById('inputPinVerify').value.trim();
+            if (pin.length !== 6) {
+                alert('Mã PIN phải bao gồm 6 chữ số!');
+                return;
+            }
+
+            if (!pendingAction) return;
+
+            bootstrap.Modal.getInstance(document.getElementById('verifyPinModal')).hide();
+            await executeToggle(pendingAction.walletId, pendingAction.permissionType, pendingAction.targetState, pin, pendingAction.switchElem);
+            pendingAction = null;
+        }
+
+        async function executeToggle(walletId, permissionType, enabled, pin, switchElem) {
+            try {
+                const res = await fetch('/Wallets/TogglePermission', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletId, permissionType, enabled, pin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    switchElem.checked = enabled;
+                    alert(data.message);
+                } else {
+                    switchElem.checked = !enabled;
+                    alert(data.message || 'Thao tác bị từ chối.');
+                }
+            } catch (err) {
+                switchElem.checked = !enabled;
+                alert('Lỗi kết nối máy chủ: ' + err);
+            }
+        }
+
+        // Chạy Bộ Giả Lập Ngân Hàng (Sandbox Simulator)
+        async function executeSimulator(e) {
+            e.preventDefault();
+            const walletId = parseInt(document.getElementById('simWalletId').value);
+            const transferType = document.querySelector('input[name="simDirection"]:checked').value;
+            const amount = parseFloat(document.getElementById('simAmount').value);
+            const content = document.getElementById('simContent').value.trim();
+
+            if (isNaN(amount) || amount <= 0) {
+                alert('Vui lòng nhập số tiền hợp lệ lớn hơn 0 đ!');
+                return;
+            }
+
+            const btn = document.getElementById('btnRunSim');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang truyền tín hiệu Open Banking...';
+
+            try {
+                const res = await fetch('/Wallets/SimulateTransaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletId, transferType, amount, content })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('sandboxModal')).hide();
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Lỗi khi kích hoạt biến động số dư.');
+                }
+            } catch (err) {
+                alert('Lỗi máy chủ: ' + err);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-bolt me-1"></i> Kích Hoạt Biến Động Số Dư';
+            }
+        }
+    </script>
+}

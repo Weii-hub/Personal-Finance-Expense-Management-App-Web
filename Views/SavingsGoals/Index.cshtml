@@ -75,7 +75,21 @@
                         <div class="card-body p-4">
                             <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
                                 <div>
-                                    <h5 class="fw-bold mb-1">@goal.Name</h5>
+                                    <h5 class="fw-bold mb-1">
+                                        @goal.Name
+                                        @if (goal.GoalType == 1)
+                                        {
+                                            <span class="badge bg-primary-subtle text-primary rounded-pill ms-1 small">
+                                                <i class="fa-solid fa-building-columns me-1"></i> Ngân hàng
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success-subtle text-success rounded-pill ms-1 small">
+                                                <i class="fa-solid fa-piggy-bank me-1"></i> Tiền mặt
+                                            </span>
+                                        }
+                                    </h5>
                                     <small class="text-muted">
                                         @(goal.TargetDate.HasValue ? $"Dự kiến: {goal.TargetDate.Value.ToString("dd/MM/yyyy")}" : "Chưa đặt ngày hoàn thành")
                                     </small>

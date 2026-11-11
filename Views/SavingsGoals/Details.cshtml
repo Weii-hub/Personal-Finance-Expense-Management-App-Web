@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = "Chi tiết mục tiêu: " + Model.Name;
     var wallets = ViewBag.Wallets as IEnumerable<PersonalFinanceApp.Models.Wallet> ?? Enumerable.Empty<PersonalFinanceApp.Models.Wallet>();
+    bool isBankGoal = Model.GoalType == 1;
+    bool hasPin = ViewBag.HasPin == true;
 }
 
 <div class="container py-4" style="max-width: 880px;">
@@ -16,6 +18,16 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
         </div>
     }
+
+    @if (TempData["AdvisoryNotice"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show rounded-4 shadow-sm border-0" role="alert" style="background: #fff9db; color: #744210; border-left: 5px solid #f59f00 !important;">
+            <i class="fa-solid fa-lightbulb fa-lg me-2 text-warning"></i>
+            <strong>@TempData["AdvisoryNotice"]</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    }
+
     @if (TempData["ErrorMessage"] != null)
     {
         <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm" role="alert">
@@ -29,9 +41,23 @@
         <div class="card-body p-4 p-md-5">
             <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                 <div>
-                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 mb-2">
-                        <i class="fa-solid fa-bullseye me-1"></i> Kế hoạch tích lũy
-                    </span>
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2">
+                            <i class="fa-solid fa-bullseye me-1"></i> Kế hoạch tích lũy
+                        </span>
+                        @if (isBankGoal)
+                        {
+                            <span class="badge bg-info-subtle text-dark rounded-pill px-3 py-2">
+                                <i class="fa-solid fa-building-columns text-primary me-1"></i> Mục tiêu Ngân Hàng
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2">
+                                <i class="fa-solid fa-piggy-bank me-1"></i> Mục tiêu Tiền Mặt
+                            </span>
+                        }
+                    </div>
                     <h2 class="fw-bold mb-1 text-dark">@Model.Name</h2>
                     <p class="text-muted mb-0 small">
                         <i class="fa-regular fa-calendar me-1"></i>
@@ -68,7 +94,7 @@
         </div>
     </div>
 
-    <!-- KHU VỰC THAO TÁC TIỀN TỆ LIÊN KẾT VỚI VÍ (OPTION 1) -->
+    <!-- KHU VỰC THAO TÁC TIỀN TỆ LIÊN KẾT VỚI VÍ -->
     <div class="row g-4 mb-4">
         <!-- 1. Form Nạp tiền từ ví vào mục tiêu -->
         <div class="col-12 @(Model.CurrentAmount > 0 ? "col-lg-6" : "")">
@@ -77,14 +103,28 @@
                     <h5 class="fw-bold text-success mb-2">
                         <i class="fa-solid fa-arrow-down-to-bracket me-2"></i>Nạp tiền vào mục tiêu
                     </h5>
-                    <p class="text-muted small mb-3">
-                        Hệ thống sẽ <strong>trừ tiền trực tiếp ở ví nguồn</strong> và cộng vào mục tiêu này.
-                    </p>
+                    
+                    @if (isBankGoal)
+                    {
+                        <p class="text-muted small mb-3">
+                            <i class="fa-solid fa-shield-halved text-primary me-1"></i>
+                            Mục tiêu này chỉ trích từ <strong>Ví Ngân Hàng</strong> đã được bật quyền. Yêu cầu nhập <strong>Mã PIN 6 số</strong> để trừ tiền.
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="text-muted small mb-3">
+                            <i class="fa-solid fa-money-bill-wave text-success me-1"></i>
+                            Mục tiêu này chỉ trích từ <strong>Ví Tiền Mặt</strong> ngoài đời.
+                        </p>
+                    }
 
                     @if (wallets.Any())
                     {
-                        <form asp-action="AddFunds" asp-route-id="@Model.Id" method="post" autocomplete="off">
+                        <form id="addFundsForm" asp-action="AddFunds" asp-route-id="@Model.Id" method="post" autocomplete="off" onsubmit="return handleAddFundsSubmit(event)">
                             @Html.AntiForgeryToken()
+                            <input type="hidden" name="pin" id="pinForAddFunds" value="" />
+
                             <div class="mb-3">
                                 <label for="walletId" class="form-label small fw-bold text-muted">Trích tiền từ ví:</label>
                                 <select id="walletId" name="walletId" class="form-select form-select-lg" required>
@@ -109,9 +149,24 @@
                     }
                     else
                     {
-                        <div class="alert alert-warning mb-0 small rounded-3">
-                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Bạn chưa có ví tiền nào để trích nạp. Hãy <a asp-controller="Wallets" asp-action="Create" class="fw-bold">tạo ví trước</a> nhé!
-                        </div>
+                        @if (isBankGoal)
+                        {
+                            <div class="alert alert-warning mb-0 small rounded-4 p-3 border-0" style="background: #fff3bf; color: #744210;">
+                                <div class="fw-bold mb-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Không có ví ngân hàng khả dụng!</div>
+                                <div>Mục tiêu này cần ví Ngân Hàng có bật công tắc <strong>"Cho phép trích tiết kiệm"</strong>.</div>
+                                <div class="mt-2">
+                                    <a asp-controller="Wallets" asp-action="Index" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill">
+                                        <i class="fa-solid fa-wallet me-1"></i> Đến Quản Lý Ví để bật quyền
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning mb-0 small rounded-3">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i> Bạn chưa có ví tiền mặt nào để trích nạp. Hãy <a asp-controller="Wallets" asp-action="Create" class="fw-bold">tạo ví trước</a> nhé!
+                            </div>
+                        }
                     }
                 </div>
             </div>
@@ -127,7 +182,7 @@
                             <i class="fa-solid fa-arrow-up-from-bracket me-2 text-warning"></i>Rút tiền về ví
                         </h5>
                         <p class="text-muted small mb-3">
-                            Chuyển tiền từ mục tiêu về lại ví của bạn khi cần chi tiêu đột xuất hoặc thu hồi vốn.
+                            Chuyển tiền từ mục tiêu về lại ví cùng loại khi cần chi tiêu đột xuất hoặc thu hồi vốn.
                         </p>
 
                         @if (wallets.Any())
@@ -175,3 +230,77 @@
         </form>
     </div>
 </div>
+
+<!-- MODAL NHẬP MÃ PIN ĐỂ TRÍCH TIỀN NGÂN HÀNG VÀO MỤC TIÊU -->
+@if (isBankGoal)
+{
+    <div class="modal fade" id="goalPinModal" tabindex="-1" aria-labelledby="goalPinModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark" id="goalPinModalLabel">
+                            <i class="fa-solid fa-lock text-primary me-2"></i> Xác Thực Mã PIN Giao Dịch
+                        </h5>
+                        <p class="text-muted small mb-0">Nhập mã PIN 6 số để xác nhận trích tiền từ ví ngân hàng</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-4">
+                        <input type="password" id="inputGoalPin" class="form-control form-control-lg text-center fw-bold fs-3" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" autofocus />
+                    </div>
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-success btn-lg rounded-pill fw-bold shadow-sm" onclick="confirmPinAndSubmit()">
+                            <i class="fa-solid fa-circle-check me-1"></i> Xác Nhận Trích Tiền
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        const isBankGoal = @(isBankGoal ? "true" : "false");
+        const hasPin = @(hasPin ? "true" : "false");
+
+        function handleAddFundsSubmit(e) {
+            if (!isBankGoal) {
+                // Ví tiền mặt: cho phép submit bình thường
+                return true;
+            }
+
+            // Ví ngân hàng: bắt buộc xác thực PIN
+            e.preventDefault();
+
+            if (!hasPin) {
+                alert('Bạn chưa thiết lập Mã PIN bảo mật! Vui lòng vào trang Quản lý Ví để thiết lập mã PIN 6 số trước khi trích tiền ngân hàng.');
+                return false;
+            }
+
+            const pinInput = document.getElementById('pinForAddFunds').value;
+            if (!pinInput) {
+                document.getElementById('inputGoalPin').value = '';
+                const modal = new bootstrap.Modal(document.getElementById('goalPinModal'));
+                modal.show();
+                return false;
+            }
+
+            return true;
+        }
+
+        function confirmPinAndSubmit() {
+            const pin = document.getElementById('inputGoalPin').value.trim();
+            if (pin.length !== 6) {
+                alert('Vui lòng nhập đúng 6 chữ số Mã PIN!');
+                return;
+            }
+
+            document.getElementById('pinForAddFunds').value = pin;
+            bootstrap.Modal.getInstance(document.getElementById('goalPinModal')).hide();
+            document.getElementById('addFundsForm').submit();
+        }
+    </script>
+}

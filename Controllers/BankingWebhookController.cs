@@ -1,0 +1,188 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using PersonalFinanceApp.Models;
+
+namespace PersonalFinanceApp.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class BankingWebhookController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly ILogger<BankingWebhookController> _logger;
+
+        public BankingWebhookController(ApplicationDbContext context, ILogger<BankingWebhookController> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
+
+        // GET: /api/banking/test (Kiểm tra trạng thái cổng Webhook)
+        [HttpGet("test")]
+        public IActionResult Test()
+        {
+            return Ok(new
+            {
+                status = "online",
+                service = "CashFlow Open Banking Gateway (SePAY / OpenBanking Ready)",
+                timestamp = DateTime.UtcNow,
+                message = "Cổng Webhook đang hoạt động tốt và sẵn sàng nhận dữ liệu giao dịch ngân hàng!"
+            });
+        }
+
+        // POST: /api/banking/webhook (Cổng nhận Webhook từ SePAY hoặc các Gateway Ngân hàng)
+        [HttpPost("webhook")]
+        public async Task<IActionResult> ReceiveWebhook([FromBody] SepayWebhookPayload payload)
+        {
+            try
+            {
+                _logger.LogInformation("Nhận webhook ngân hàng: {@Payload}", payload);
+
+                if (payload == null)
+                {
+                    return BadRequest(new { success = false, message = "Payload rỗng." });
+                }
+
+                // Xác định số tài khoản ngân hàng
+                var rawAccount = (payload.AccountNumber ?? "").Trim();
+                if (string.IsNullOrEmpty(rawAccount))
+                {
+                    return BadRequest(new { success = false, message = "Thiếu số tài khoản ngân hàng trong payload." });
+                }
+
+                // Tìm ví liên kết khớp với số tài khoản
+                var wallet = await _context.Wallets
+                    .FirstOrDefaultAsync(w => w.AccountNumber != null &&
+                        (w.AccountNumber.Trim() == rawAccount || rawAccount.EndsWith(w.AccountNumber.Trim())));
+
+                if (wallet == null)
+                {
+                    _logger.LogWarning("Không tìm thấy ví nào liên kết với số tài khoản {Account}", rawAccount);
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = $"Không tìm thấy ví trong hệ thống CashFlow có số tài khoản khớp với '{rawAccount}'."
+                    });
+                }
+
+                // Kiểm tra công tắc: Quyền tự động theo dõi biến động số dư
+                if (!wallet.IsSyncEnabled)
+                {
+                    _logger.LogInformation("Ví {WalletName} đã TẮT quyền theo dõi biến động số dư. Bỏ qua.", wallet.Name);
+                    return Ok(new
+                    {
+                        success = false,
+                        message = $"Ví '{wallet.Name}' hiện đang TẮT công tắc theo dõi biến động số dư. Giao dịch không được tự động ghi nhận theo chính sách bảo mật."
+                    });
+                }
+
+                // Xác định số tiền và loại giao dịch (In/Out)
+                decimal amount = 0;
+                string transferType = (payload.TransferType ?? "").ToLower();
+
+                if (payload.TransferAmount.HasValue && payload.TransferAmount.Value > 0)
+                {
+                    amount = payload.TransferAmount.Value;
+                }
+                else if (payload.AmountIn.HasValue && payload.AmountIn.Value > 0)
+                {
+                    amount = payload.AmountIn.Value;
+                    transferType = "in";
+                }
+                else if (payload.AmountOut.HasValue && payload.AmountOut.Value > 0)
+                {
+                    amount = payload.AmountOut.Value;
+                    transferType = "out";
+                }
+
+                if (amount <= 0)
+                {
+                    return BadRequest(new { success = false, message = "Số tiền giao dịch không hợp lệ." });
+                }
+
+                // Lấy Danh mục tương ứng
+                var inCategory = await _context.Categories.FirstOrDefaultAsync(c => c.Name == "Thu nhập từ ngân hàng")
+                    ?? await _context.Categories.FirstOrDefaultAsync(c => c.Type == 1);
+
+                var outCategory = await _context.Categories.FirstOrDefaultAsync(c => c.Name == "Chi tiêu qua ngân hàng")
+                    ?? await _context.Categories.FirstOrDefaultAsync(c => c.Type == 0);
+
+                var content = !string.IsNullOrWhiteSpace(payload.Content)
+                    ? payload.Content.Trim()
+                    : (!string.IsNullOrWhiteSpace(payload.Description) ? payload.Description.Trim() : "Giao dịch ngân hàng tự động");
+
+                var bankTag = !string.IsNullOrWhiteSpace(payload.Gateway) ? payload.Gateway : (wallet.BankName ?? "Ngân hàng");
+
+                if (transferType == "in" || transferType == "incoming")
+                {
+                    // TIỀN VÀO (+) -> Tăng số dư ví + Tạo Transaction Thu Nhập
+                    wallet.InitialBalance += amount;
+
+                    var tx = new Transaction
+                    {
+                        Amount = amount,
+                        TransactionDate = DateTime.UtcNow,
+                        Note = $"[{bankTag}] {content}",
+                        WalletId = wallet.Id,
+                        CategoryId = inCategory!.Id,
+                        UserId = wallet.UserId
+                    };
+                    _context.Transactions.Add(tx);
+                }
+                else
+                {
+                    // TIỀN RA (-) -> Giảm số dư ví + Tạo Transaction Chi Tiêu
+                    wallet.InitialBalance -= amount;
+
+                    var tx = new Transaction
+                    {
+                        Amount = amount,
+                        TransactionDate = DateTime.UtcNow,
+                        Note = $"[{bankTag}] {content}",
+                        WalletId = wallet.Id,
+                        CategoryId = outCategory!.Id,
+                        UserId = wallet.UserId
+                    };
+                    _context.Transactions.Add(tx);
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Giao dịch ngân hàng xử lý thành công cho ví {WalletName}, số tiền: {Amount}", wallet.Name, amount);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Đã ghi nhận giao dịch thành công! Số dư mới của ví '{wallet.Name}' là {wallet.InitialBalance:N0} đ.",
+                    walletId = wallet.Id,
+                    walletName = wallet.Name,
+                    newBalance = wallet.InitialBalance,
+                    transferType,
+                    amount
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xử lý webhook ngân hàng.");
+                return StatusCode(500, new { success = false, message = "Lỗi máy chủ nội bộ: " + ex.Message });
+            }
+        }
+    }
+
+    public class SepayWebhookPayload
+    {
+        public long? Id { get; set; }
+        public string? Gateway { get; set; }
+        public string? TransactionDate { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? Code { get; set; }
+        public string? Content { get; set; }
+        public string? Description { get; set; }
+        public string? TransferType { get; set; } // "in" hoặc "out"
+        public decimal? TransferAmount { get; set; }
+        public decimal? AmountIn { get; set; }
+        public decimal? AmountOut { get; set; }
+        public decimal? Accumulated { get; set; }
+        public string? ReferenceCode { get; set; }
+    }
+}

@@ -66,12 +66,27 @@ namespace PersonalFinanceApp.Models
                     new Category { Name = "Học tập & Sách vở", Type = 0, Icon = "fa-book", Color = "#4dabf7" },
                     new Category { Name = "Tiền trọ & Điện nước", Type = 0, Icon = "fa-house", Color = "#ff922b" },
                     new Category { Name = "Cà phê & Giải trí", Type = 0, Icon = "fa-mug-hot", Color = "#20c997" },
+                    new Category { Name = "Chi tiêu qua ngân hàng", Type = 0, Icon = "fa-credit-card", Color = "#ff6b81" },
                     // Thu nhập (Type = 1)
                     new Category { Name = "Tiền lương part-time", Type = 1, Icon = "fa-money-bill-wave", Color = "#20c997" },
                     new Category { Name = "Dự án Freelance", Type = 1, Icon = "fa-laptop-code", Color = "#12b886" },
-                    new Category { Name = "Ba mẹ chu cấp", Type = 1, Icon = "fa-heart", Color = "#e64980" }
+                    new Category { Name = "Ba mẹ chu cấp", Type = 1, Icon = "fa-heart", Color = "#e64980" },
+                    new Category { Name = "Thu nhập từ ngân hàng", Type = 1, Icon = "fa-building-columns", Color = "#20c997" }
                 };
                 context.Categories.AddRange(categories);
+                await context.SaveChangesAsync();
+            }
+            else
+            {
+                // Bổ sung danh mục ngân hàng nếu chưa có
+                if (!context.Categories.Any(c => c.Name == "Thu nhập từ ngân hàng"))
+                {
+                    context.Categories.Add(new Category { Name = "Thu nhập từ ngân hàng", Type = 1, Icon = "fa-building-columns", Color = "#20c997" });
+                }
+                if (!context.Categories.Any(c => c.Name == "Chi tiêu qua ngân hàng"))
+                {
+                    context.Categories.Add(new Category { Name = "Chi tiêu qua ngân hàng", Type = 0, Icon = "fa-credit-card", Color = "#ff6b81" });
+                }
                 await context.SaveChangesAsync();
             }
 
@@ -149,7 +164,7 @@ namespace PersonalFinanceApp.Models
                 await context.SaveChangesAsync();
             }
 
-            // Đảm bảo bảng Budgets tồn tại trên database (Issue #8)
+            // Đảm bảo bảng Budgets và các cột mở rộng tồn tại trên database (Issue #8, Banking Integration)
             try
             {
                 await context.Database.ExecuteSqlRawAsync("""
@@ -169,6 +184,15 @@ namespace PersonalFinanceApp.Models
                     );
                     CREATE INDEX IF NOT EXISTS "IX_Budgets_UserId_Year_Month"
                         ON "Budgets" ("UserId", "Year", "Month");
+
+                    -- Cập nhật các cột Open Banking & PIN bảo mật
+                    ALTER TABLE "AspNetUsers" ADD COLUMN IF NOT EXISTS "SecurityPinHash" text;
+                    ALTER TABLE "Wallets" ADD COLUMN IF NOT EXISTS "WalletType" integer NOT NULL DEFAULT 0;
+                    ALTER TABLE "Wallets" ADD COLUMN IF NOT EXISTS "BankName" character varying(100);
+                    ALTER TABLE "Wallets" ADD COLUMN IF NOT EXISTS "AccountNumber" character varying(50);
+                    ALTER TABLE "Wallets" ADD COLUMN IF NOT EXISTS "IsSavingsAllowed" boolean NOT NULL DEFAULT false;
+                    ALTER TABLE "Wallets" ADD COLUMN IF NOT EXISTS "IsSyncEnabled" boolean NOT NULL DEFAULT false;
+                    ALTER TABLE "Goals" ADD COLUMN IF NOT EXISTS "GoalType" integer NOT NULL DEFAULT 0;
                 """);
             }
             catch

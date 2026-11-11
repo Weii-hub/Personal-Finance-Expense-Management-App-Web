@@ -27,6 +27,10 @@ namespace PersonalFinanceApp.Models
 
         public DateTime CreatedAt { get; set; }
 
+        // 0 = Tích lũy Tiền mặt ngoài đời, 1 = Tích lũy Ví điện tử / Ngân hàng
+        [Display(Name = "Loại tích lũy")]
+        public int GoalType { get; set; } = 0;
+
         public decimal ProgressPercentage =>
             TargetAmount <= 0 ? 0 : Math.Min(100m, CurrentAmount / TargetAmount * 100m);
 

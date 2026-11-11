@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -11,11 +12,16 @@ namespace PersonalFinanceApp.Controllers
     public class SavingsGoalsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly string _connectionString;
 
-        public SavingsGoalsController(ApplicationDbContext context, IConfiguration configuration)
+        public SavingsGoalsController(
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            IConfiguration configuration)
         {
             _context = context;
+            _userManager = userManager;
             _connectionString = configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("Không tìm thấy ConnectionStrings:DefaultConnection.");
         }
@@ -32,7 +38,7 @@ namespace PersonalFinanceApp.Controllers
             await connection.OpenAsync();
 
             const string sql = """
-                SELECT "Id", "UserId", "Name", "TargetAmount", "CurrentAmount", "TargetDate", "CreatedAt"
+                SELECT "Id", "UserId", "Name", "TargetAmount", "CurrentAmount", "TargetDate", "CreatedAt", "GoalType"
                 FROM "Goals"
                 WHERE "UserId" = @userId
                 ORDER BY "CreatedAt" DESC, "Id" DESC;
@@ -49,7 +55,11 @@ namespace PersonalFinanceApp.Controllers
         }
 
         [HttpGet]
-        public IActionResult Create() => View(new SavingsGoal { TargetDate = DateTime.Today.AddMonths(1) });
+        public IActionResult Create() => View(new SavingsGoal
+        {
+            GoalType = 0,
+            TargetDate = DateTime.Today.AddMonths(1)
+        });
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -65,8 +75,8 @@ namespace PersonalFinanceApp.Controllers
             await connection.OpenAsync();
 
             const string sql = """
-                INSERT INTO "Goals" ("UserId", "Name", "TargetAmount", "CurrentAmount", "TargetDate")
-                VALUES (@userId, @name, @targetAmount, 0, @targetDate);
+                INSERT INTO "Goals" ("UserId", "Name", "TargetAmount", "CurrentAmount", "TargetDate", "GoalType")
+                VALUES (@userId, @name, @targetAmount, 0, @targetDate, @goalType);
                 """;
 
             await using var command = new NpgsqlCommand(sql, connection);
@@ -74,6 +84,7 @@ namespace PersonalFinanceApp.Controllers
             command.Parameters.AddWithValue("name", goal.Name);
             command.Parameters.AddWithValue("targetAmount", goal.TargetAmount);
             command.Parameters.AddWithValue("targetDate", (object?)goal.TargetDate?.Date ?? DBNull.Value);
+            command.Parameters.AddWithValue("goalType", goal.GoalType);
             await command.ExecuteNonQueryAsync();
 
             TempData["SuccessMessage"] = "Đã tạo mục tiêu tiết kiệm thành công!";
@@ -87,13 +98,32 @@ namespace PersonalFinanceApp.Controllers
             if (goal == null)
                 return NotFound();
 
-            // Nạp danh sách ví của tài khoản để chọn trích/rút tiền
-            var wallets = await _context.Wallets
+            var allWallets = await _context.Wallets
                 .Where(w => w.UserId == CurrentUserId)
                 .OrderBy(w => w.Name)
                 .ToListAsync();
 
-            ViewBag.Wallets = wallets;
+            // Phân loại nguồn ví nghiêm ngặt theo loại mục tiêu (Strict Wallet Type Lock):
+            // - Nếu mục tiêu Tiền mặt (GoalType == 0): chỉ cho phép lấy/rút từ ví tiền mặt (WalletType == 0)
+            // - Nếu mục tiêu Ngân hàng (GoalType == 1): chỉ cho phép lấy/rút từ ví ngân hàng (WalletType == 1 && IsSavingsAllowed == true)
+            List<Wallet> allowedWallets;
+            if (goal.GoalType == 0)
+            {
+                allowedWallets = allWallets.Where(w => w.WalletType == 0).ToList();
+            }
+            else
+            {
+                allowedWallets = allWallets.Where(w => w.WalletType == 1 && w.IsSavingsAllowed).ToList();
+            }
+
+            ViewBag.Wallets = allowedWallets;
+            ViewBag.TotalWalletsCount = allWallets.Count;
+            ViewBag.BankWalletsCount = allWallets.Count(w => w.WalletType == 1);
+            ViewBag.BankWalletsWithoutPermissionCount = allWallets.Count(w => w.WalletType == 1 && !w.IsSavingsAllowed);
+
+            var user = await _userManager.FindByIdAsync(CurrentUserId);
+            ViewBag.HasPin = !string.IsNullOrEmpty(user?.SecurityPinHash);
+
             return View(goal);
         }
 
@@ -126,7 +156,8 @@ namespace PersonalFinanceApp.Controllers
                 UPDATE "Goals"
                 SET "Name" = @name,
                     "TargetAmount" = @targetAmount,
-                    "TargetDate" = @targetDate
+                    "TargetDate" = @targetDate,
+                    "GoalType" = @goalType
                 WHERE "Id" = @id AND "UserId" = @userId;
                 """;
 
@@ -134,6 +165,7 @@ namespace PersonalFinanceApp.Controllers
             command.Parameters.AddWithValue("name", input.Name);
             command.Parameters.AddWithValue("targetAmount", input.TargetAmount);
             command.Parameters.AddWithValue("targetDate", (object?)input.TargetDate?.Date ?? DBNull.Value);
+            command.Parameters.AddWithValue("goalType", input.GoalType);
             command.Parameters.AddWithValue("id", id);
             command.Parameters.AddWithValue("userId", CurrentUserId);
 
@@ -147,7 +179,7 @@ namespace PersonalFinanceApp.Controllers
         // POST: Nạp tiền vào mục tiêu tiết kiệm bằng cách trích từ một ví nguồn
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddFunds(int id, int walletId, decimal amount)
+        public async Task<IActionResult> AddFunds(int id, int walletId, decimal amount, string? pin = null)
         {
             if (amount <= 0)
             {
@@ -164,6 +196,41 @@ namespace PersonalFinanceApp.Controllers
             {
                 TempData["ErrorMessage"] = "Ví nguồn không tồn tại hoặc không thuộc quyền sở hữu của bạn.";
                 return RedirectToAction(nameof(Details), new { id });
+            }
+
+            // Kiểm tra quy tắc loại ví (Strict Type Match)
+            if (goal.GoalType == 0 && wallet.WalletType != 0)
+            {
+                TempData["ErrorMessage"] = "Mục tiêu này là mục tiêu 'Tiền mặt', vui lòng chọn một chiếc ví tiền mặt để trích nạp!";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+            if (goal.GoalType == 1 && wallet.WalletType != 1)
+            {
+                TempData["ErrorMessage"] = "Mục tiêu này là mục tiêu 'Điện tử / Ngân hàng', vui lòng chọn một ví ngân hàng để trích nạp!";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            // Nếu là ví ngân hàng: Kiểm tra quyền và bắt buộc xác thực Mã PIN 6 số
+            if (wallet.WalletType == 1)
+            {
+                if (!wallet.IsSavingsAllowed)
+                {
+                    TempData["ErrorMessage"] = $"Ví '{wallet.Name}' hiện đang TẮT 'Quyền trích cho mục tiêu tiết kiệm'. Vui lòng bật quyền này trong Quản lý Ví trước khi trích nạp!";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var user = await _userManager.FindByIdAsync(CurrentUserId);
+                if (user == null || string.IsNullOrEmpty(user.SecurityPinHash))
+                {
+                    TempData["ErrorMessage"] = "Bạn chưa thiết lập Mã PIN bảo mật. Vui lòng vào Quản lý Ví để tạo mã PIN trước khi trích tiền ngân hàng!";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                if (string.IsNullOrWhiteSpace(pin) || _userManager.PasswordHasher.VerifyHashedPassword(user, user.SecurityPinHash, pin) == PasswordVerificationResult.Failed)
+                {
+                    TempData["ErrorMessage"] = "🔒 Mã PIN bảo mật không chính xác! Giao dịch trích tiền từ tài khoản ngân hàng đã bị hủy bỏ để bảo vệ an toàn.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
             }
 
             // Kiểm tra số dư ví nguồn có đủ tiền để trích nạp không
@@ -194,7 +261,16 @@ namespace PersonalFinanceApp.Controllers
                 await command.ExecuteNonQueryAsync();
             }
 
-            TempData["SuccessMessage"] = $"Đã trích {amount:N0} đ từ ví '{wallet.Name}' nạp vào mục tiêu '{goal.Name}' thành công!";
+            if (wallet.WalletType == 0)
+            {
+                TempData["SuccessMessage"] = $"Đã trích {amount:N0} đ từ ví '{wallet.Name}' nạp vào mục tiêu '{goal.Name}' thành công!";
+                TempData["AdvisoryNotice"] = "💡 Lời khuyên thực tế: Hãy nhớ trích cất số tiền mặt này riêng ra (như bỏ heo đất hoặc phong bì) để tránh tiêu nhầm nhé!";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = $"🔒 Xác thực PIN thành công! Đã trích {amount:N0} đ từ tài khoản '{wallet.Name}' nạp vào mục tiêu '{goal.Name}'. Số tiền này đã được bảo vệ trên hệ thống!";
+            }
+
             return RedirectToAction(nameof(Details), new { id });
         }
 
@@ -226,6 +302,18 @@ namespace PersonalFinanceApp.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
+            // Kiểm tra khớp loại ví khi hoàn tiền
+            if (goal.GoalType == 0 && wallet.WalletType != 0)
+            {
+                TempData["ErrorMessage"] = "Mục tiêu này là mục tiêu 'Tiền mặt', vui lòng chọn một chiếc ví tiền mặt để nhận lại tiền!";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+            if (goal.GoalType == 1 && wallet.WalletType != 1)
+            {
+                TempData["ErrorMessage"] = "Mục tiêu này là mục tiêu 'Điện tử / Ngân hàng', vui lòng chọn ví ngân hàng để nhận lại tiền!";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
             // 1. Cộng tiền hoàn trả vào ví nhận
             wallet.InitialBalance += amount;
             await _context.SaveChangesAsync();
@@ -247,7 +335,15 @@ namespace PersonalFinanceApp.Controllers
                 await command.ExecuteNonQueryAsync();
             }
 
-            TempData["SuccessMessage"] = $"Đã rút {amount:N0} đ từ mục tiêu '{goal.Name}' chuyển về ví '{wallet.Name}' thành công!";
+            if (wallet.WalletType == 0)
+            {
+                TempData["SuccessMessage"] = $"Đã rút {amount:N0} đ từ mục tiêu '{goal.Name}' chuyển về ví '{wallet.Name}' thành công! Bạn có thể lấy tiền từ heo đất / phong bì bỏ lại vào ví.";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = $"Đã rút {amount:N0} đ từ mục tiêu '{goal.Name}' hoàn trả về tài khoản '{wallet.Name}' thành công!";
+            }
+
             return RedirectToAction(nameof(Details), new { id });
         }
 
@@ -280,7 +376,7 @@ namespace PersonalFinanceApp.Controllers
             await connection.OpenAsync();
 
             const string sql = """
-                SELECT "Id", "UserId", "Name", "TargetAmount", "CurrentAmount", "TargetDate", "CreatedAt"
+                SELECT "Id", "UserId", "Name", "TargetAmount", "CurrentAmount", "TargetDate", "CreatedAt", "GoalType"
                 FROM "Goals"
                 WHERE "Id" = @id AND "UserId" = @userId;
                 """;
@@ -303,7 +399,8 @@ namespace PersonalFinanceApp.Controllers
                 TargetAmount = reader.GetDecimal(3),
                 CurrentAmount = reader.GetDecimal(4),
                 TargetDate = reader.IsDBNull(5) ? null : reader.GetDateTime(5),
-                CreatedAt = reader.GetDateTime(6)
+                CreatedAt = reader.GetDateTime(6),
+                GoalType = reader.FieldCount > 7 && !reader.IsDBNull(7) ? reader.GetInt32(7) : 0
             };
         }
     }

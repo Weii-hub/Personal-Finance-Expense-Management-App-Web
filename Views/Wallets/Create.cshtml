@@ -4,45 +4,110 @@
     ViewData["Title"] = "Thêm Ví Mới";
 }
 
-<div class="container mt-4 mb-5" style="max-width: 620px;">
+<div class="container mt-4 mb-5" style="max-width: 660px;">
     <!-- Tiêu đề & Nút quay lại -->
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <h2 class="mb-1"><i class="fa-solid fa-wallet text-success me-2"></i> Thêm Ví Mới</h2>
-            <p class="text-muted mb-0">Khởi tạo nguồn tiền mới (Tiền mặt, Tài khoản ngân hàng, Ví điện tử) để bắt đầu ghi chép.</p>
+            <p class="text-muted mb-0">Khởi tạo nguồn tiền mới để bắt đầu theo dõi dòng tiền và số dư.</p>
         </div>
         <a asp-action="Index" class="btn btn-outline-secondary">
             <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
         </a>
     </div>
 
-    <!-- Khung form chính căn giữa màn hình -->
+    <!-- Khung form chính -->
     <div class="card border-0 rounded-4 shadow-sm p-4 p-md-4" style="background: #ffffff; border: 2px solid #e0e7ff !important;">
-        <form asp-action="Create" method="post" autocomplete="off">
+        <form asp-action="Create" method="post" autocomplete="off" id="walletCreateForm">
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger rounded-3" role="alert"></div>
+
+            <!-- CHỌN LOẠI VÍ: TIỀN MẶT vs NGÂN HÀNG LIÊN KẾT -->
+            <div class="mb-4">
+                <label class="form-label fw-bold">Chọn phân loại ví <span class="text-danger">*</span></label>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <input type="radio" class="btn-check" name="WalletType" id="walletTypeCash" value="0" @(Model.WalletType == 0 ? "checked" : "") onchange="onWalletTypeChange(0)">
+                        <label class="btn btn-outline-success w-100 p-3 rounded-4 text-start h-100 d-flex flex-column justify-content-between" for="walletTypeCash">
+                            <div>
+                                <i class="fa-solid fa-money-bill-wave fa-xl mb-2 text-success"></i>
+                                <div class="fw-bold">Ví Tiền Mặt</div>
+                            </div>
+                            <small class="text-muted mt-1" style="font-size: 0.8rem;">Ghi chép thủ công các khoản chi tiêu ngoài đời</small>
+                        </label>
+                    </div>
+                    <div class="col-6">
+                        <input type="radio" class="btn-check" name="WalletType" id="walletTypeBank" value="1" @(Model.WalletType == 1 ? "checked" : "") onchange="onWalletTypeChange(1)">
+                        <label class="btn btn-outline-primary w-100 p-3 rounded-4 text-start h-100 d-flex flex-column justify-content-between" for="walletTypeBank">
+                            <div>
+                                <i class="fa-solid fa-building-columns fa-xl mb-2 text-primary"></i>
+                                <div class="fw-bold">Ví Ngân Hàng / Điện Tử</div>
+                            </div>
+                            <small class="text-muted mt-1" style="font-size: 0.8rem;">Hỗ trợ liên kết Open Banking & Biến động số dư</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
 
             <!-- Tên ví -->
             <div class="mb-3">
-                <label asp-for="Name" class="form-label fw-bold">Tên ví <span class="text-danger">*</span></label>
+                <label asp-for="Name" class="form-label fw-bold">Tên ví hiển thị <span class="text-danger">*</span></label>
                 <div class="input-group">
-                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-wallet"></i></span>
-                    <input asp-for="Name" class="form-control form-control-lg" placeholder="Ví dụ: Ví Tiền Mặt, MoMo, Techcombank..." required autofocus />
+                    <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-tag"></i></span>
+                    <input asp-for="Name" id="walletNameInput" class="form-control form-control-lg" placeholder="Ví dụ: Ví Tiền Mặt, MBBank Chính, MoMo..." required autofocus />
                 </div>
                 <span asp-validation-for="Name" class="text-danger small"></span>
             </div>
 
+            <!-- KHỐI THÔNG TIN DÀNH CHO VÍ NGÂN HÀNG (Ẩn/Hiện động) -->
+            <div id="bankFieldsSection" class="p-3 mb-3 rounded-4 border" style="background: #f8faff; border-color: #dbeafe !important; display: @(Model.WalletType == 1 ? "block" : "none");">
+                <div class="fw-bold text-primary mb-2 small text-uppercase">
+                    <i class="fa-solid fa-shield-halved me-1"></i> Thông Tin Liên Kết Ngân Hàng
+                </div>
+
+                <!-- Tên Ngân Hàng / Ví Điện Tử -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Chọn Ngân hàng / Cổng thanh toán <span class="text-danger">*</span></label>
+                    <select id="bankSelect" class="form-select mb-2" onchange="onBankSelectChange(this)">
+                        <option value="">-- Chọn ngân hàng phổ biến --</option>
+                        <option value="MBBank">MBBank (Ngân hàng Quân Đội)</option>
+                        <option value="Vietcombank">Vietcombank (VCB)</option>
+                        <option value="Techcombank">Techcombank (TCB)</option>
+                        <option value="ACB">ACB (Ngân hàng Á Châu)</option>
+                        <option value="VPBank">VPBank (Việt Nam Thịnh Vượng)</option>
+                        <option value="TPBank">TPBank (Tiên Phong)</option>
+                        <option value="BIDV">BIDV (Đầu tư & Phát triển)</option>
+                        <option value="Agribank">Agribank (Nông Nghiệp)</option>
+                        <option value="MoMo">Ví MoMo</option>
+                        <option value="ZaloPay">Ví ZaloPay</option>
+                        <option value="Khác">-- Nhập tên khác --</option>
+                    </select>
+                    <input asp-for="BankName" id="BankNameInput" class="form-control" placeholder="Nhập tên ngân hàng hoặc ví (VD: MBBank, Cake, ShopeePay...)" />
+                    <span asp-validation-for="BankName" class="text-danger small"></span>
+                </div>
+
+                <!-- Số Tài Khoản -->
+                <div class="mb-2">
+                    <label asp-for="AccountNumber" class="form-label small fw-bold">Số tài khoản / Số thẻ / SĐT ví <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white text-muted"><i class="fa-solid fa-hashtag"></i></span>
+                        <input asp-for="AccountNumber" id="AccountNumberInput" class="form-control" placeholder="Ví dụ: 0388888888" />
+                    </div>
+                    <span asp-validation-for="AccountNumber" class="text-danger small"></span>
+                    <div class="form-text text-muted" style="font-size: 0.78rem;">
+                        <i class="fa-solid fa-circle-info me-1 text-primary"></i> Dùng để nhận diện chính xác giao dịch khi quét VietQR hoặc nhận Webhook SePAY/Simulator.
+                    </div>
+                </div>
+            </div>
+
             <!-- Số dư ban đầu -->
             <div class="mb-3">
-                <label asp-for="InitialBalance" class="form-label fw-bold">Số dư ban đầu (VNĐ) <span class="text-danger">*</span></label>
+                <label asp-for="InitialBalance" class="form-label fw-bold">Số dư hiện tại (VNĐ) <span class="text-danger">*</span></label>
                 <div class="input-group input-group-lg">
                     <span class="input-group-text bg-light text-success fw-bold">₫</span>
                     <input asp-for="InitialBalance" type="number" step="any" min="0" class="form-control fw-bold fs-5 text-success" placeholder="0" value="0" required />
                 </div>
                 <span asp-validation-for="InitialBalance" class="text-danger small"></span>
-                <div class="form-text text-muted small">
-                    <i class="fa-solid fa-circle-info me-1 text-primary"></i> Số tiền thực tế hiện có trong ví của bạn tại thời điểm bắt đầu theo dõi.
-                </div>
             </div>
 
             <!-- Biểu tượng Icon -->
@@ -50,14 +115,14 @@
                 <label asp-for="Icon" class="form-label fw-bold">Biểu tượng Icon (FontAwesome)</label>
                 <div class="input-group mb-2">
                     <span class="input-group-text bg-light text-muted">
-                        <i id="iconPreview" class="fa-solid fa-wallet fa-lg text-primary"></i>
+                        <i id="iconPreview" class="fa-solid @(string.IsNullOrWhiteSpace(Model.Icon) ? "fa-wallet" : Model.Icon) fa-lg text-primary"></i>
                     </span>
-                    <input asp-for="Icon" id="IconInput" class="form-control" value="fa-wallet" placeholder="fa-wallet, fa-mobile-screen..." />
+                    <input asp-for="Icon" id="IconInput" class="form-control" value="@(string.IsNullOrWhiteSpace(Model.Icon) ? "fa-wallet" : Model.Icon)" placeholder="fa-wallet, fa-mobile-screen..." />
                 </div>
                 <span asp-validation-for="Icon" class="text-danger small"></span>
 
                 <!-- Gợi ý biểu tượng -->
-                <div class="small text-muted mb-2 fw-semibold">Gợi ý biểu tượng phổ biến (Bấm để chọn):</div>
+                <div class="small text-muted mb-2 fw-semibold">Gợi ý biểu tượng nhanh:</div>
                 <div class="d-flex flex-wrap gap-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-wallet">
                         <i class="fa-solid fa-wallet me-1"></i> Ví tiền
@@ -68,14 +133,11 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-mobile-screen">
                         <i class="fa-solid fa-mobile-screen me-1"></i> Ví điện tử
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-piggy-bank">
-                        <i class="fa-solid fa-piggy-bank me-1"></i> Heo đất
-                    </button>
                     <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-credit-card">
                         <i class="fa-solid fa-credit-card me-1"></i> Thẻ tín dụng
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-money-bill-wave">
-                        <i class="fa-solid fa-money-bill-wave me-1"></i> Tiền mặt
+                    <button type="button" class="btn btn-sm btn-outline-secondary icon-select-btn" data-icon="fa-piggy-bank">
+                        <i class="fa-solid fa-piggy-bank me-1"></i> Heo đất
                     </button>
                 </div>
             </div>
@@ -83,7 +145,7 @@
             <!-- Nút bấm tạo ví -->
             <div class="d-grid gap-2 pt-2">
                 <button type="submit" class="btn btn-primary btn-lg shadow-sm">
-                    <i class="fa-solid fa-plus me-1"></i> Tạo Ví Mới
+                    <i class="fa-solid fa-plus me-1"></i> Lưu Ví Mới
                 </button>
             </div>
         </form>
@@ -94,6 +156,42 @@
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 
     <script>
+        function onWalletTypeChange(type) {
+            const bankSection = document.getElementById('bankFieldsSection');
+            const iconInput = document.getElementById('IconInput');
+            const iconPreview = document.getElementById('iconPreview');
+
+            if (type === 1) {
+                bankSection.style.display = 'block';
+                if (iconInput.value === 'fa-wallet') {
+                    iconInput.value = 'fa-building-columns';
+                    iconPreview.className = 'fa-solid fa-building-columns fa-lg text-primary';
+                }
+            } else {
+                bankSection.style.display = 'none';
+                if (iconInput.value === 'fa-building-columns') {
+                    iconInput.value = 'fa-wallet';
+                    iconPreview.className = 'fa-solid fa-wallet fa-lg text-primary';
+                }
+            }
+        }
+
+        function onBankSelectChange(select) {
+            const val = select.value;
+            const input = document.getElementById('BankNameInput');
+            const nameInput = document.getElementById('walletNameInput');
+
+            if (val && val !== 'Khác') {
+                input.value = val;
+                if (!nameInput.value || nameInput.value === 'Ví Tiền Mặt') {
+                    nameInput.value = 'Ví ' + val;
+                }
+            } else if (val === 'Khác') {
+                input.value = '';
+                input.focus();
+            }
+        }
+
         document.querySelectorAll('.icon-select-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const icon = this.getAttribute('data-icon');
