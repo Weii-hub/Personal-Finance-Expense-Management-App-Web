@@ -173,38 +173,11 @@ namespace PersonalFinanceApp.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            // Đảm bảo có danh mục "Tiết kiệm & Tích lũy" (Type = 0: Chi tiêu / Trích tiền)
-            var cat = await _context.Categories.FirstOrDefaultAsync(c => c.Name == "Tiết kiệm & Tích lũy" && c.Type == 0);
-            if (cat == null)
-            {
-                cat = new Category
-                {
-                    Name = "Tiết kiệm & Tích lũy",
-                    Type = 0,
-                    Icon = "fa-bullseye",
-                    Color = "#0d6efd"
-                };
-                _context.Categories.Add(cat);
-                await _context.SaveChangesAsync();
-            }
-
             // 1. Trừ tiền ở ví nguồn
             wallet.InitialBalance -= amount;
-
-            // 2. Ghi nhận giao dịch trích tiền vào Sổ Giao Dịch
-            var transaction = new Transaction
-            {
-                WalletId = wallet.Id,
-                CategoryId = cat.Id,
-                Amount = amount,
-                TransactionDate = DateTime.UtcNow,
-                Note = $"[Tiết kiệm] Trích nạp mục tiêu: {goal.Name}",
-                UserId = CurrentUserId
-            };
-            _context.Transactions.Add(transaction);
             await _context.SaveChangesAsync();
 
-            // 3. Cập nhật tăng số dư tích lũy của mục tiêu
+            // 2. Cập nhật tăng số dư tích lũy của mục tiêu
             await using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
@@ -253,38 +226,11 @@ namespace PersonalFinanceApp.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            // Đảm bảo có danh mục "Thu hồi quỹ tiết kiệm" (Type = 1: Thu nhập / Hoàn tiền)
-            var cat = await _context.Categories.FirstOrDefaultAsync(c => c.Name == "Thu hồi quỹ tiết kiệm" && c.Type == 1);
-            if (cat == null)
-            {
-                cat = new Category
-                {
-                    Name = "Thu hồi quỹ tiết kiệm",
-                    Type = 1,
-                    Icon = "fa-piggy-bank",
-                    Color = "#20c997"
-                };
-                _context.Categories.Add(cat);
-                await _context.SaveChangesAsync();
-            }
-
             // 1. Cộng tiền hoàn trả vào ví nhận
             wallet.InitialBalance += amount;
-
-            // 2. Ghi nhận giao dịch thu hoàn tiền vào Sổ Giao Dịch
-            var transaction = new Transaction
-            {
-                WalletId = wallet.Id,
-                CategoryId = cat.Id,
-                Amount = amount,
-                TransactionDate = DateTime.UtcNow,
-                Note = $"[Hoàn quỹ] Rút từ mục tiêu: {goal.Name}",
-                UserId = CurrentUserId
-            };
-            _context.Transactions.Add(transaction);
             await _context.SaveChangesAsync();
 
-            // 3. Cập nhật giảm số dư tích lũy của mục tiêu
+            // 2. Cập nhật giảm số dư tích lũy của mục tiêu
             await using (var connection = new NpgsqlConnection(_connectionString))
             {
                 await connection.OpenAsync();

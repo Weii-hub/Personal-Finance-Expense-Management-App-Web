@@ -155,7 +155,7 @@
         }
         else
         {
-            <div class="table-responsive">
+            <div class="transaction-table-scroll table-responsive">
                 <table class="table align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -180,15 +180,7 @@
                                             <i class="fa-solid @categoryIcon"></i>
                                         </div>
                                         <div>
-                                            <div class="d-flex align-items-center flex-wrap gap-1">
-                                                <span class="fw-bold text-dark">@(item.Category?.Name ?? "Không rõ")</span>
-                                                @if (item.Category?.Name == "Tiết kiệm & Tích lũy" || item.Category?.Name == "Thu hồi quỹ tiết kiệm")
-                                                {
-                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size: 0.65rem;">
-                                                        <i class="fa-solid fa-piggy-bank me-1"></i> Quỹ tiết kiệm
-                                                    </span>
-                                                }
-                                            </div>
+                                            <div class="fw-bold text-dark">@(item.Category?.Name ?? "Không rõ")</div>
                                             @if (!string.IsNullOrEmpty(item.Note))
                                             {
                                                 <small class="text-muted">@item.Note</small>
@@ -213,22 +205,13 @@
                                         @(isIncome ? "+" : "-")@item.Amount.ToString("N0") đ
                                     </span>
                                 </td>
-                                <td class="text-end">
-                                    @if (item.Category?.Name == "Tiết kiệm & Tích lũy" || item.Category?.Name == "Thu hồi quỹ tiết kiệm")
-                                    {
-                                        <a asp-controller="SavingsGoals" asp-action="Index" class="btn btn-sm btn-outline-primary" title="Quản lý trực tiếp tại Mục tiêu tiết kiệm">
-                                            <i class="fa-solid fa-bullseye me-1"></i> Mục tiêu
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary me-1" title="Chỉnh sửa">
-                                            <i class="fa-solid fa-pen-to-square"></i>
-                                        </a>
-                                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" title="Xóa">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </a>
-                                    }
+                                <td class="text-end text-nowrap">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary me-1" title="Chỉnh sửa">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </a>
                                 </td>
                             </tr>
                         }
