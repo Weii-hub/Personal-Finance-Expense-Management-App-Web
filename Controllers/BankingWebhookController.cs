@@ -7,6 +7,8 @@ namespace PersonalFinanceApp.Controllers
     [ApiController]
     [Route("api/banking")]
     [Route("api/sepay")]
+    [Route("api/webhook")]
+    [Route("webhook")]
     public class BankingWebhookController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -18,8 +20,10 @@ namespace PersonalFinanceApp.Controllers
             _logger = logger;
         }
 
-        // GET: /api/banking/test (Kiểm tra trạng thái cổng Webhook)
+        // GET: /api/banking/test hoặc /api/banking/webhook (Kiểm tra trạng thái cổng Webhook)
+        [HttpGet]
         [HttpGet("test")]
+        [HttpGet("webhook")]
         public IActionResult Test()
         {
             return Ok(new
@@ -31,9 +35,11 @@ namespace PersonalFinanceApp.Controllers
             });
         }
 
-        // POST: /api/banking/webhook (Cổng nhận Webhook từ SePAY hoặc các Gateway Ngân hàng)
+        // POST: /api/banking/webhook, /api/banking, /api/sepay/webhook, /api/sepay, /webhook (Cổng nhận Webhook từ SePAY)
+        [HttpPost]
         [HttpPost("webhook")]
-        public async Task<IActionResult> ReceiveWebhook([FromBody] SepayWebhookPayload payload)
+        [HttpPost("webhooks")]
+        public async Task<IActionResult> ReceiveWebhook([FromBody] SepayWebhookPayload? payload)
         {
             try
             {
@@ -41,14 +47,24 @@ namespace PersonalFinanceApp.Controllers
 
                 if (payload == null)
                 {
-                    return BadRequest(new { success = false, message = "Payload rỗng." });
+                    return Ok(new
+                    {
+                        success = false,
+                        isTestAcknowledged = true,
+                        message = "Máy chủ CashFlow đã nhận được tín hiệu Webhook (Payload rỗng hoặc ping test)."
+                    });
                 }
 
                 // Xác định số tài khoản ngân hàng
                 var rawAccount = (payload.AccountNumber ?? "").Trim();
                 if (string.IsNullOrEmpty(rawAccount))
                 {
-                    return BadRequest(new { success = false, message = "Thiếu số tài khoản ngân hàng trong payload." });
+                    return Ok(new
+                    {
+                        success = false,
+                        isTestAcknowledged = true,
+                        message = "Máy chủ CashFlow đã nhận được tín hiệu Webhook (Thiếu số tài khoản để khớp ví)."
+                    });
                 }
 
                 // Tìm ví liên kết khớp với số tài khoản
@@ -59,10 +75,12 @@ namespace PersonalFinanceApp.Controllers
                 if (wallet == null)
                 {
                     _logger.LogWarning("Không tìm thấy ví nào liên kết với số tài khoản {Account}", rawAccount);
-                    return NotFound(new
+                    // Trả về 200 OK kèm thông điệp rõ ràng để công cụ 'Gửi thử' của SePAY thành công, không báo lỗi 404
+                    return Ok(new
                     {
                         success = false,
-                        message = $"Không tìm thấy ví trong hệ thống CashFlow có số tài khoản khớp với '{rawAccount}'."
+                        isTestAcknowledged = true,
+                        message = $"Máy chủ CashFlow đã nhận Webhook thành công! Số tài khoản '{rawAccount}' chưa khớp với ví nào trong hệ thống."
                     });
                 }
 
@@ -98,7 +116,12 @@ namespace PersonalFinanceApp.Controllers
 
                 if (amount <= 0)
                 {
-                    return BadRequest(new { success = false, message = "Số tiền giao dịch không hợp lệ." });
+                    return Ok(new
+                    {
+                        success = false,
+                        isTestAcknowledged = true,
+                        message = "Máy chủ CashFlow đã nhận tín hiệu Webhook (Số tiền giao dịch kiểm tra = 0 đ)."
+                    });
                 }
 
                 // Lấy Danh mục tương ứng
@@ -110,7 +133,9 @@ namespace PersonalFinanceApp.Controllers
 
                 var content = !string.IsNullOrWhiteSpace(payload.Content)
                     ? payload.Content.Trim()
-                    : (!string.IsNullOrWhiteSpace(payload.Description) ? payload.Description.Trim() : "Giao dịch ngân hàng tự động");
+                    : (!string.IsNullOrWhiteSpace(payload.TransactionContent)
+                        ? payload.TransactionContent.Trim()
+                        : (!string.IsNullOrWhiteSpace(payload.Description) ? payload.Description.Trim() : "Giao dịch ngân hàng tự động"));
 
                 var bankTag = !string.IsNullOrWhiteSpace(payload.Gateway) ? payload.Gateway : (wallet.BankName ?? "Ngân hàng");
 
@@ -176,14 +201,17 @@ namespace PersonalFinanceApp.Controllers
         public string? Gateway { get; set; }
         public string? TransactionDate { get; set; }
         public string? AccountNumber { get; set; }
+        public string? SubAccount { get; set; }
         public string? Code { get; set; }
         public string? Content { get; set; }
         public string? Description { get; set; }
+        public string? TransactionContent { get; set; }
+        public string? ReferenceCode { get; set; }
+        public string? ReferenceNumber { get; set; }
         public string? TransferType { get; set; } // "in" hoặc "out"
         public decimal? TransferAmount { get; set; }
         public decimal? AmountIn { get; set; }
         public decimal? AmountOut { get; set; }
         public decimal? Accumulated { get; set; }
-        public string? ReferenceCode { get; set; }
     }
 }
