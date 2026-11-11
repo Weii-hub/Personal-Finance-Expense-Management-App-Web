@@ -49,7 +49,8 @@ Một PBI chỉ được chuyển sang trạng thái **Done** khi thỏa mãn to
 | **Sprint 1** | Khởi tạo cấu trúc đồ án, CSDL Supabase, giao diện dùng chung và phân hệ Quản lý Đa Ví. | #1, #2, #3 | **13 SP** | **100% Hoàn thành** |
 | **Sprint 2** | Xây dựng Danh mục Thu/Chi, Sổ ghi chép giao dịch và logic tự động tính toán số dư ví. | #4, #5, #6 | **13 SP** | **100% Hoàn thành** |
 | **Sprint 3** | Báo cáo Chart.js, Đặt ngân sách 80%, Mục tiêu tiết kiệm, Xác thực Identity, Phân hệ Admin và Tối ưu Mobile. | #7, #8, #9, #10, #11, #12, #13, #14, #15 | **34 SP** | **100% Hoàn thành** |
-| **TỔNG CỘNG** | **Toàn bộ hệ thống CashFlow hoàn thiện và đưa vào vận hành thực tế** | **15/15 Issues** | **60 SP** | **100% Hoàn thành** |
+| **Sprint 4** | Mở rộng FinTech: Phân loại Ví kép (Tiền mặt vs Ngân hàng), Bảo mật Mã PIN 6 số, Open Banking Webhook & Sandbox Simulator. | #19, #20, #21, #22 | **18 SP** | **100% Hoàn thành** |
+| **TỔNG CỘNG** | **Toàn bộ hệ thống CashFlow hoàn thiện và đưa vào vận hành thực tế** | **19/19 Issues** | **78 SP** | **100% Hoàn thành** |
 
 ---
 
@@ -416,6 +417,56 @@ Một PBI chỉ được chuyển sang trạng thái **Done** khi thỏa mãn to
 
 ---
 
+
+### PHÂN HỆ 9: MỞ RỘNG FINTECH & OPEN BANKING INTEGRATION (SPRINT 4)
+
+#### PBI-16: Phân loại nguồn ví: Ví Tiền Mặt & Ví Ngân Hàng / Điện Tử liên kết
+* **Phân hệ**: Quản lý Ví tiền & Ngân hàng số
+* **GitHub Issue**: Resolves #19
+* **Độ ưu tiên**: Must Have | **Điểm ước lượng**: 5 SP | **Sprint**: Sprint 4 | **Trạng thái**: Done
+* **User Story**:
+  > Là một người dùng quản lý tài chính, tôi muốn ứng dụng phân biệt rõ ràng giữa Ví Tiền Mặt ngoài đời (để ghi chép chi tiêu tiền giấy thủ công) và Ví Ngân Hàng / Ví Điện Tử (để theo dõi số dư tài khoản ngân hàng số và liên kết Open Banking), giúp việc quản lý dòng tiền không bị lẫn lộn giữa thế giới thực và số.
+* **Đặc tả kỹ thuật**:
+  * Mở rộng Entity `Wallet`: thêm trường `WalletType` (0 = Tiền mặt, 1 = Ngân hàng/Điện tử), `BankName`, `AccountNumber`.
+  * Cập nhật Controller `WalletsController` (`Create`, `Edit`).
+  * Giao diện: `Views/Wallets/Create.cshtml`, `Views/Wallets/Edit.cshtml`, `Views/Wallets/Index.cshtml` hiển thị Badge phân loại trực quan.
+
+#### PBI-17: Hệ thống Mã PIN Bảo Mật (Security PIN) & Phân quyền công tắc ví điện tử
+* **Phân hệ**: An toàn thông tin & Bảo mật FinTech
+* **GitHub Issue**: Resolves #20
+* **Độ ưu tiên**: Must Have | **Điểm ước lượng**: 5 SP | **Sprint**: Sprint 4 | **Trạng thái**: Done
+* **User Story**:
+  > Là một chủ tài khoản, tôi muốn bảo vệ các quyền nhạy cảm và thao tác trích tiền ngân hàng bằng Mã PIN Bảo Mật 6 số, đồng thời có thể chủ động cấp/hủy quyền trích tiết kiệm và theo dõi biến động số dư thông qua 2 công tắc gạt (Consent Toggles).
+* **Đặc tả kỹ thuật**:
+  * Mở rộng `ApplicationUser`: thêm trường `SecurityPinHash` băm bảo mật PBKDF2/Identity PasswordHasher.
+  * Tích hợp 2 công tắc phân quyền trên dòng ví ngân hàng: `IsSavingsAllowed` (Cho phép trích tiết kiệm) và `IsSyncEnabled` (Tự động theo dõi biến động số dư).
+  * Hỗ trợ quy trình Đổi Mã PIN 3 lớp an toàn: `[Mã PIN hiện tại]` + `[Mã PIN mới]` + `[Xác nhận PIN mới]`.
+
+#### PBI-18: Tích hợp Open Banking Webhook (SePAY) và Bộ Giả Lập Giao Dịch Sandbox Simulator
+* **Phân hệ**: Tích hợp Cổng Ngân Hàng Số
+* **GitHub Issue**: Resolves #21
+* **Độ ưu tiên**: Must Have | **Điểm ước lượng**: 5 SP | **Sprint**: Sprint 4 | **Trạng thái**: Done
+* **User Story**:
+  > Là một người dùng hiện đại và nhóm phát triển đồ án, chúng tôi muốn hệ thống có khả năng nhận biến động số dư ngân hàng tự động qua cổng Webhook Open Banking chuẩn RESTful, đồng thời có sẵn Bộ Giả Lập Sandbox Simulator trên giao diện để phục vụ việc kiểm thử và demo 2 chiều (Thu nhập & Chi tiêu) trước hội đồng đánh giá.
+* **Đặc tả kỹ thuật**:
+  * Endpoint API: `POST /api/banking/webhook` (và `/api/sepay/webhook`) nhận JSON chuẩn SePAY/Casso.
+  * Tự động khớp số tài khoản, kiểm tra quyền `IsSyncEnabled`, cập nhật số dư ví và tạo giao dịch "Thu nhập từ ngân hàng" hoặc "Chi tiêu qua ngân hàng".
+  * Giao diện: Modal "Giả lập giao dịch Ngân hàng (Sandbox Simulator)" trên `Views/Wallets/Index.cshtml`.
+  * Endpoint kiểm tra trạng thái cổng: `GET /api/banking/test`.
+
+#### PBI-19: Khóa phân luồng nguồn ví cho Mục Tiêu Tiết Kiệm (Strict Wallet Type Lock & PIN Authentication)
+* **Phân hệ**: Quản lý Mục Tiêu Tiết Kiệm
+* **GitHub Issue**: Resolves #22
+* **Độ ưu tiên**: Should Have | **Điểm ước lượng**: 3 SP | **Sprint**: Sprint 4 | **Trạng thái**: Done
+* **User Story**:
+  > Là một người dùng tiết kiệm, tôi muốn khi đặt mục tiêu tiết kiệm, dòng tiền được phân luồng nhất quán: Mục tiêu tiền mặt chỉ trích từ tiền mặt và có nhắc nhở cất tiền riêng ngoài đời; Mục tiêu ngân hàng chỉ trích từ ví ngân hàng và yêu cầu xác thực Mã PIN 6 số.
+* **Đặc tả kỹ thuật**:
+  * Mở rộng `SavingsGoal`: thêm trường `GoalType` (0 = Tiền mặt, 1 = Ngân hàng).
+  * Filter dropdown nguồn ví trong `Views/SavingsGoals/Details.cshtml` theo đúng loại mục tiêu.
+  * Trích ví tiền mặt: hiển thị alert nhắc nhở bỏ heo đất/phong bì riêng.
+  * Trích ví ngân hàng: bắt buộc nhập mã PIN 6 số xác thực trước khi trừ tiền.
+
+---
 ## 4. MA TRẬN TRUY XUẤT YÊU CẦU (TRACEABILITY MATRIX)
 
 Ma trận đối chiếu giữa các User Story trong Product Backlog và 15 Issues đã đóng trên GitHub Repository:
@@ -437,6 +488,10 @@ Ma trận đối chiếu giữa các User Story trong Product Backlog và 15 Iss
 | **PBI-13** | Phân hệ Admin Panel & Chống tự khóa | Issue #14 | Commit `a6d4fab` (main) | **Đã nghiệm thu (Done)** |
 | **PBI-14** | Tối ưu Responsive Mobile & UI Pastel | Issue #9 | `feature/frontend-revamp` (PR #17) | **Đã nghiệm thu (Done)** |
 | **PBI-15** | Seeding Demo Data & Render Docker Cloud | Issue #10 | Commit `ea85168`, `360e666` | **Đã nghiệm thu (Done)** |
+| **PBI-16** | Phân loại Ví kép (Tiền mặt vs Ngân hàng) | Issue #19 | Commit `883066b` (main) | **Đã nghiệm thu (Done)** |
+| **PBI-17** | Hệ thống Mã PIN 6 số & Công tắc phân quyền | Issue #20 | Commit `883066b`, `bdf1099` | **Đã nghiệm thu (Done)** |
+| **PBI-18** | Open Banking Webhook & Sandbox Simulator | Issue #21 | Commit `883066b`, `f25a621` | **Đã nghiệm thu (Done)** |
+| **PBI-19** | Phân luồng Mục tiêu tiết kiệm & Xác thực PIN | Issue #22 | Commit `883066b` (main) | **Đã nghiệm thu (Done)** |
 
 ---
 *Tài liệu Product Backlog này được lập theo chuẩn kỹ thuật phần mềm Scrum/Agile, phản ánh 100% hiện trạng kiến trúc và mã nguồn thực tế của đồ án CashFlow, không chứa các thành phần giả lập.*
