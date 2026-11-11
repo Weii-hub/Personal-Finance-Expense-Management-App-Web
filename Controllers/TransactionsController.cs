@@ -56,12 +56,16 @@ namespace PersonalFinanceApp.Controllers
                 .ThenByDescending(t => t.Id)
                 .ToListAsync();
 
+            // Tính toán Tổng Thu và Tổng Chi thực tế (Loại trừ dòng tiền chuyển dịch nội bộ giữa Ví và Quỹ tiết kiệm)
+            bool filterSavingsOnly = categoryId.HasValue &&
+                _context.Categories.Any(c => c.Id == categoryId.Value && (c.Name == "Tiết kiệm & Tích lũy" || c.Name == "Thu hồi quỹ tiết kiệm"));
+
             decimal totalIncome = transactions
-                .Where(t => t.Category?.Type == 1)
+                .Where(t => t.Category?.Type == 1 && (filterSavingsOnly || t.Category?.Name != "Thu hồi quỹ tiết kiệm"))
                 .Sum(t => t.Amount);
 
             decimal totalExpense = transactions
-                .Where(t => t.Category?.Type == 0)
+                .Where(t => t.Category?.Type == 0 && (filterSavingsOnly || t.Category?.Name != "Tiết kiệm & Tích lũy"))
                 .Sum(t => t.Amount);
 
             ViewBag.TotalIncome = totalIncome;

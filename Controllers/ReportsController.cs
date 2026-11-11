@@ -29,9 +29,9 @@ namespace PersonalFinanceApp.Controllers
                 .AsNoTracking()
                 .ToListAsync();
 
-            // 1. Dữ liệu Biểu đồ Tròn: Tỷ lệ chi tiêu theo danh mục
+            // 1. Dữ liệu Biểu đồ Tròn: Tỷ lệ chi tiêu theo danh mục (Loại trừ chuyển dịch tiết kiệm nội bộ)
             var expenseByCategory = transactions
-                .Where(t => t.Category != null && t.Category.Type == 0) // Chỉ tính Chi tiêu
+                .Where(t => t.Category != null && t.Category.Type == 0 && t.Category.Name != "Tiết kiệm & Tích lũy") // Chỉ tính Chi tiêu thực tế
                 .GroupBy(t => new { t.Category!.Name, t.Category.Color })
                 .Select(g => new
                 {
@@ -46,7 +46,7 @@ namespace PersonalFinanceApp.Controllers
             ViewBag.ExpenseAmounts = expenseByCategory.Select(x => x.TotalAmount).ToArray();
             ViewBag.ExpenseColors = expenseByCategory.Select(x => x.Color).ToArray();
 
-            // 2. Dữ liệu Biểu đồ Cột: So sánh Thu vs Chi theo 6 tháng gần nhất
+            // 2. Dữ liệu Biểu đồ Cột: So sánh Thu vs Chi theo 6 tháng gần nhất (Loại trừ chuyển dịch tiết kiệm nội bộ)
             var now = DateTime.UtcNow;
             var sixMonthsAgo = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-5);
 
@@ -62,12 +62,14 @@ namespace PersonalFinanceApp.Controllers
 
                 var inc = transactions
                     .Where(t => t.Category?.Type == 1 &&
+                                t.Category?.Name != "Thu hồi quỹ tiết kiệm" &&
                                 t.TransactionDate.Year == targetMonth.Year &&
                                 t.TransactionDate.Month == targetMonth.Month)
                     .Sum(t => t.Amount);
 
                 var exp = transactions
                     .Where(t => t.Category?.Type == 0 &&
+                                t.Category?.Name != "Tiết kiệm & Tích lũy" &&
                                 t.TransactionDate.Year == targetMonth.Year &&
                                 t.TransactionDate.Month == targetMonth.Month)
                     .Sum(t => t.Amount);
@@ -80,9 +82,9 @@ namespace PersonalFinanceApp.Controllers
             ViewBag.MonthlyIncomes = monthlyIncomes.ToArray();
             ViewBag.MonthlyExpenses = monthlyExpenses.ToArray();
 
-            // Thống kê chung
-            ViewBag.TotalAllTimeIncome = transactions.Where(t => t.Category?.Type == 1).Sum(t => t.Amount);
-            ViewBag.TotalAllTimeExpense = transactions.Where(t => t.Category?.Type == 0).Sum(t => t.Amount);
+            // Thống kê chung (Chỉ tính Thu/Chi tiêu thực tế)
+            ViewBag.TotalAllTimeIncome = transactions.Where(t => t.Category?.Type == 1 && t.Category?.Name != "Thu hồi quỹ tiết kiệm").Sum(t => t.Amount);
+            ViewBag.TotalAllTimeExpense = transactions.Where(t => t.Category?.Type == 0 && t.Category?.Name != "Tiết kiệm & Tích lũy").Sum(t => t.Amount);
             ViewBag.TopExpenseCategory = expenseByCategory.FirstOrDefault()?.CategoryName ?? "Chưa có";
 
             return View();

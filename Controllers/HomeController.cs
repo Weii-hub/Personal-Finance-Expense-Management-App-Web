@@ -49,8 +49,14 @@ namespace PersonalFinanceApp.Controllers
                 viewModel.TotalBalance = wallets.Sum(w => w.InitialBalance);
                 viewModel.TotalWallets = wallets.Count;
                 viewModel.TotalTransactions = await _context.Transactions.CountAsync(t => t.UserId == userId);
-                viewModel.MonthlyIncome = monthlyTransactions.Where(t => t.Category?.Type == 1).Sum(t => t.Amount);
-                viewModel.MonthlyExpense = monthlyTransactions.Where(t => t.Category?.Type == 0).Sum(t => t.Amount);
+                // Chỉ tính các khoản Thu / Chi thực tế, loại trừ dòng tiền chuyển dịch nội bộ giữa Ví và Mục tiêu tiết kiệm
+                viewModel.MonthlyIncome = monthlyTransactions
+                    .Where(t => t.Category?.Type == 1 && t.Category?.Name != "Thu hồi quỹ tiết kiệm")
+                    .Sum(t => t.Amount);
+
+                viewModel.MonthlyExpense = monthlyTransactions
+                    .Where(t => t.Category?.Type == 0 && t.Category?.Name != "Tiết kiệm & Tích lũy")
+                    .Sum(t => t.Amount);
                 viewModel.RecentTransactions = recentTransactions;
             }
 
