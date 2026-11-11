@@ -214,28 +214,54 @@ namespace PersonalFinanceApp.Controllers
             return Json(new { hasPin = !string.IsNullOrEmpty(user?.SecurityPinHash) });
         }
 
-        // POST: /Wallets/SetPin (Thiết lập Mã PIN bảo mật 6 số lần đầu)
+        // POST: /Wallets/SetPin (Thiết lập hoặc Đổi Mã PIN bảo mật 6 số)
         [HttpPost]
         public async Task<IActionResult> SetPin([FromBody] SetPinRequest req)
         {
             if (req == null || string.IsNullOrWhiteSpace(req.Pin) || req.Pin.Length != 6 || !req.Pin.All(char.IsDigit))
             {
-                return Json(new { success = false, message = "Mã PIN phải bao gồm đúng 6 chữ số (0-9)." });
+                return Json(new { success = false, message = "Mã PIN mới phải bao gồm đúng 6 chữ số (0-9)." });
             }
 
             if (req.Pin != req.ConfirmPin)
             {
-                return Json(new { success = false, message = "Mã PIN xác nhận không trùng khớp. Vui lòng thử lại!" });
+                return Json(new { success = false, message = "Mã PIN mới xác nhận không trùng khớp. Vui lòng nhập lại!" });
             }
 
             var userId = GetCurrentUserId();
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return Json(new { success = false, message = "Không tìm thấy người dùng." });
 
+            // NẾU NGƯỜI DÙNG ĐÃ CÓ PIN -> BẮT BUỘC NHẬP MÃ PIN HIỆN TẠI (ĐỔI MÃ PIN)
+            if (!string.IsNullOrEmpty(user.SecurityPinHash))
+            {
+                if (string.IsNullOrWhiteSpace(req.CurrentPin))
+                {
+                    return Json(new { success = false, message = "Vui lòng nhập Mã PIN hiện tại để xác thực trước khi đổi mã mới!" });
+                }
+
+                var verifyCurrent = _userManager.PasswordHasher.VerifyHashedPassword(user, user.SecurityPinHash, req.CurrentPin);
+                if (verifyCurrent == PasswordVerificationResult.Failed)
+                {
+                    return Json(new { success = false, message = "Mã PIN hiện tại không chính xác! Không thể đổi mã PIN." });
+                }
+
+                if (req.CurrentPin == req.Pin)
+                {
+                    return Json(new { success = false, message = "Mã PIN mới không được trùng với mã PIN hiện tại!" });
+                }
+            }
+
             user.SecurityPinHash = _userManager.PasswordHasher.HashPassword(user, req.Pin);
             await _userManager.UpdateAsync(user);
 
-            return Json(new { success = true, message = "Đã thiết lập Mã PIN bảo mật 6 số thành công!" });
+            var isChange = !string.IsNullOrEmpty(req.CurrentPin);
+            return Json(new { 
+                success = true, 
+                message = isChange 
+                    ? "Đã đổi Mã PIN bảo mật 6 số thành công!" 
+                    : "Đã thiết lập Mã PIN bảo mật 6 số lần đầu thành công!" 
+            });
         }
 
         // POST: /Wallets/TogglePermission (Bật/Tắt công tắc quyền với xác thực PIN)
@@ -382,6 +408,7 @@ namespace PersonalFinanceApp.Controllers
 
     public class SetPinRequest
     {
+        public string? CurrentPin { get; set; }
         public string Pin { get; set; } = string.Empty;
         public string ConfirmPin { get; set; } = string.Empty;
     }

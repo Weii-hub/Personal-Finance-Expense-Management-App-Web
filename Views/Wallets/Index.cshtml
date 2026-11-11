@@ -336,7 +336,7 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- MODAL 2: THIẾT LẬP MÃ PIN 6 SỐ (SETUP PIN MODAL)              -->
+<!-- MODAL 2: THIẾT LẬP HOẶC ĐỔI MÃ PIN 6 SỐ (SETUP/CHANGE PIN)   -->
 <!-- ============================================================ -->
 <div class="modal fade" id="setupPinModal" tabindex="-1" aria-labelledby="setupPinModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
@@ -344,25 +344,31 @@
             <div class="modal-header border-0 pb-0">
                 <div>
                     <h5 class="modal-title fw-bold text-dark" id="setupPinModalLabel">
-                        <i class="fa-solid fa-key text-primary me-2"></i> Thiết Lập Mã PIN Bảo Mật
+                        <i class="fa-solid fa-key text-primary me-2"></i> <span id="pinModalTitle">Thiết Lập Mã PIN</span>
                     </h5>
-                    <p class="text-muted small mb-0">Mã PIN gồm 6 chữ số dùng để bảo vệ quyền ví và các giao dịch ngân hàng</p>
+                    <p class="text-muted small mb-0" id="pinModalSub">Mã PIN gồm 6 chữ số dùng để bảo vệ quyền ví và các giao dịch ngân hàng</p>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
             <div class="modal-body p-4">
                 <form id="setupPinForm" onsubmit="submitSetPin(event)">
+                    <!-- Ô nhập PIN hiện tại (Bắt buộc khi ĐÃ CÓ PIN để bảo mật chống người khác đổi trộm) -->
+                    <div class="mb-3" id="currentPinGroup" style="display: none;">
+                        <label class="form-label small fw-bold text-danger">Nhập Mã PIN hiện tại <span class="text-danger">*</span>:</label>
+                        <input type="password" id="currentPin" class="form-control form-control-lg text-center fw-bold fs-4 border-danger-subtle" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" />
+                    </div>
+
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Nhập Mã PIN mới (6 chữ số):</label>
-                        <input type="password" id="newPin" class="form-control form-control-lg text-center fw-bold fs-4" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required autofocus />
+                        <label class="form-label small fw-bold text-muted" id="lblNewPin">Nhập Mã PIN mới (6 chữ số):</label>
+                        <input type="password" id="newPin" class="form-control form-control-lg text-center fw-bold fs-4" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required />
                     </div>
                     <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">Xác nhận lại Mã PIN:</label>
+                        <label class="form-label small fw-bold text-muted">Xác nhận lại Mã PIN mới:</label>
                         <input type="password" id="confirmNewPin" class="form-control form-control-lg text-center fw-bold fs-4" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required />
                     </div>
                     <div class="d-grid">
                         <button type="submit" id="btnSavePin" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm">
-                            <i class="fa-solid fa-shield-check me-1"></i> Lưu Mã PIN Bảo Mật
+                            <i class="fa-solid fa-shield-check me-1"></i> <span id="btnSavePinText">Lưu Mã PIN Bảo Mật</span>
                         </button>
                     </div>
                 </form>
@@ -409,8 +415,27 @@
 
         function openPinManager() {
             const setupModal = new bootstrap.Modal(document.getElementById('setupPinModal'));
+            const currentPinInput = document.getElementById('currentPin');
+            currentPinInput.value = '';
             document.getElementById('newPin').value = '';
             document.getElementById('confirmNewPin').value = '';
+
+            if (userHasPin) {
+                document.getElementById('pinModalTitle').innerText = 'Đổi Mã PIN Bảo Mật';
+                document.getElementById('pinModalSub').innerText = 'Nhập mã PIN hiện tại để xác minh danh tính trước khi đổi sang mã mới';
+                document.getElementById('currentPinGroup').style.display = 'block';
+                currentPinInput.required = true;
+                document.getElementById('lblNewPin').innerText = 'Nhập Mã PIN MỚI (6 chữ số):';
+                document.getElementById('btnSavePinText').innerText = 'Đổi Mã PIN Ngay';
+            } else {
+                document.getElementById('pinModalTitle').innerText = 'Thiết Lập Mã PIN Lần Đầu';
+                document.getElementById('pinModalSub').innerText = 'Mã PIN gồm 6 chữ số dùng để bảo vệ quyền ví và các giao dịch ngân hàng';
+                document.getElementById('currentPinGroup').style.display = 'none';
+                currentPinInput.required = false;
+                document.getElementById('lblNewPin').innerText = 'Nhập Mã PIN mới (6 chữ số):';
+                document.getElementById('btnSavePinText').innerText = 'Lưu Mã PIN Bảo Mật';
+            }
+
             setupModal.show();
         }
 
@@ -422,10 +447,7 @@
                 // Đảo lại trạng thái công tắc tạm thời
                 switchElem.checked = !targetState;
                 pendingAction = { walletId, permissionType, targetState, switchElem };
-                const setupModal = new bootstrap.Modal(document.getElementById('setupPinModal'));
-                document.getElementById('newPin').value = '';
-                document.getElementById('confirmNewPin').value = '';
-                setupModal.show();
+                openPinManager();
                 return;
             }
 
@@ -441,18 +463,24 @@
             verifyModal.show();
         }
 
-        // Gửi thiết lập Mã PIN mới
+        // Gửi thiết lập hoặc đổi Mã PIN
         async function submitSetPin(e) {
             e.preventDefault();
+            const currentPin = userHasPin ? document.getElementById('currentPin').value.trim() : null;
             const pin = document.getElementById('newPin').value.trim();
             const confirmPin = document.getElementById('confirmNewPin').value.trim();
 
+            if (userHasPin && (!currentPin || currentPin.length !== 6)) {
+                alert('Vui lòng nhập đúng 6 chữ số của Mã PIN hiện tại!');
+                return;
+            }
+
             if (pin.length !== 6 || confirmPin.length !== 6) {
-                alert('Mã PIN phải bao gồm đúng 6 chữ số!');
+                alert('Mã PIN mới phải bao gồm đúng 6 chữ số!');
                 return;
             }
             if (pin !== confirmPin) {
-                alert('Mã PIN xác nhận không khớp. Vui lòng nhập lại!');
+                alert('Mã PIN mới xác nhận không khớp. Vui lòng nhập lại!');
                 return;
             }
 
@@ -460,7 +488,7 @@
                 const res = await fetch('/Wallets/SetPin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pin, confirmPin })
+                    body: JSON.stringify({ currentPin, pin, confirmPin })
                 });
                 const data = await res.json();
                 if (data.success) {
