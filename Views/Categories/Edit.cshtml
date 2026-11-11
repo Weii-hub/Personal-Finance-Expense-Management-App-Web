@@ -4,19 +4,32 @@
     ViewData["Title"] = "Sửa danh mục";
 }
 
-<div class="container mt-4 category-form-card">
-    <h2>✏️ Sửa danh mục</h2>
-    <p class="text-muted">Cập nhật tên hoặc loại của danh mục.</p>
-    <hr />
-    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
-        <input type="hidden" asp-for="Id" />
-        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-        <partial name="_CategoryForm" model="Model" />
-        <div class="d-flex gap-2 mt-4">
-            <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk me-1"></i> Lưu thay đổi</button>
-            <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+<div class="container mt-4 mb-5" style="max-width: 640px;">
+    <!-- Tiêu đề & Nút quay lại -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="mb-1"><i class="fa-solid fa-pen-to-square text-primary me-2"></i> Chỉnh Sửa Danh Mục</h2>
+            <p class="text-muted mb-0">Cập nhật tên gọi, biểu tượng hoặc loại danh mục.</p>
         </div>
-    </form>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
+        </a>
+    </div>
+
+    <!-- Khung form chính căn giữa màn hình -->
+    <div class="card border-0 rounded-4 shadow-sm p-4" style="background: #ffffff; border: 2px solid #e0e7ff !important;">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post" autocomplete="off">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" role="alert"></div>
+            <partial name="_CategoryForm" model="Model" />
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="fa-solid fa-check me-1"></i> Lưu Thay Đổi
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 @section Scripts {
@@ -31,8 +44,10 @@
                 preview.style.backgroundColor = income ? '#198754' : '#dc3545';
                 label.textContent = income ? 'Thu nhập' : 'Chi tiêu';
             }
-            type.addEventListener('change', updatePreview);
-            updatePreview();
+            if (type && preview && label) {
+                type.addEventListener('change', updatePreview);
+                updatePreview();
+            }
         })();
     </script>
 }
