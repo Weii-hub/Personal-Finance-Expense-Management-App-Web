@@ -355,10 +355,10 @@ namespace PersonalFinanceApp.Controllers
                 ?? await _context.Categories.FirstOrDefaultAsync(c => c.Type == 0);
 
             var isIncome = req.TransferType == "in";
-            var bankTag = wallet.BankName ?? "Ngân hàng";
-            var note = string.IsNullOrWhiteSpace(req.Content)
+            var rawNote = string.IsNullOrWhiteSpace(req.Content)
                 ? (isIncome ? "Chuyển tiền vào tài khoản" : "Thanh toán quẹt thẻ/chuyển khoản")
                 : req.Content.Trim();
+            var cleanNote = BankingWebhookController.SanitizeBankingContent(rawNote);
 
             if (isIncome)
             {
@@ -367,7 +367,7 @@ namespace PersonalFinanceApp.Controllers
                 {
                     Amount = req.Amount,
                     TransactionDate = DateTime.UtcNow,
-                    Note = $"[{bankTag}] {note}",
+                    Note = cleanNote,
                     WalletId = wallet.Id,
                     CategoryId = inCat!.Id,
                     UserId = userId
@@ -380,7 +380,7 @@ namespace PersonalFinanceApp.Controllers
                 {
                     Amount = req.Amount,
                     TransactionDate = DateTime.UtcNow,
-                    Note = $"[{bankTag}] {note}",
+                    Note = cleanNote,
                     WalletId = wallet.Id,
                     CategoryId = outCat!.Id,
                     UserId = userId

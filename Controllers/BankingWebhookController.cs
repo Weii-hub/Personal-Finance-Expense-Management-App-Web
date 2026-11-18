@@ -234,13 +234,13 @@ namespace PersonalFinanceApp.Controllers
                 var outCategory = await _context.Categories.FirstOrDefaultAsync(c => c.Name == "Chi tiêu qua ngân hàng")
                     ?? await _context.Categories.FirstOrDefaultAsync(c => c.Type == 0);
 
-                var content = !string.IsNullOrWhiteSpace(payload.Content)
+                var rawContent = !string.IsNullOrWhiteSpace(payload.Content)
                     ? payload.Content.Trim()
                     : (!string.IsNullOrWhiteSpace(payload.TransactionContent)
                         ? payload.TransactionContent.Trim()
-                        : (!string.IsNullOrWhiteSpace(payload.Description) ? payload.Description.Trim() : "Giao dịch ngân hàng tự động"));
+                        : (!string.IsNullOrWhiteSpace(payload.Description) ? payload.Description.Trim() : "Giao dịch ngân hàng"));
 
-                var bankTag = !string.IsNullOrWhiteSpace(payload.Gateway) ? payload.Gateway : (wallet.BankName ?? "Ngân hàng");
+                var cleanNote = SanitizeBankingContent(rawContent);
 
                 if (transferType == "in" || transferType == "incoming")
                 {
@@ -251,7 +251,7 @@ namespace PersonalFinanceApp.Controllers
                     {
                         Amount = amount,
                         TransactionDate = DateTime.UtcNow,
-                        Note = $"[{bankTag}] {content}",
+                        Note = cleanNote,
                         WalletId = wallet.Id,
                         CategoryId = inCategory!.Id,
                         UserId = wallet.UserId
@@ -267,7 +267,7 @@ namespace PersonalFinanceApp.Controllers
                     {
                         Amount = amount,
                         TransactionDate = DateTime.UtcNow,
-                        Note = $"[{bankTag}] {content}",
+                        Note = cleanNote,
                         WalletId = wallet.Id,
                         CategoryId = outCategory!.Id,
                         UserId = wallet.UserId
@@ -295,6 +295,53 @@ namespace PersonalFinanceApp.Controllers
                 _logger.LogError(ex, "Lỗi khi xử lý webhook ngân hàng.");
                 return StatusCode(500, new { success = false, message = "Lỗi máy chủ nội bộ: " + ex.Message });
             }
+        }
+
+        /// <summary>
+        /// Làm sạch và tinh gọn nội dung giao dịch ngân hàng thô (loại bỏ mã kỹ thuật, trace code, tiền tố thừa)
+        /// </summary>
+        public static string SanitizeBankingContent(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return "Giao dịch ngân hàng";
+
+            string text = raw.Trim();
+
+            // 1. Gỡ bỏ tiền tố cổng/ngân hàng dạng [MBBank], [VCB], ...
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"^\[[^\]]+\]\s*", "");
+
+            // 2. Gỡ bỏ tiền tố kỹ thuật liên ngân hàng như MBVCB.17099473772.568493.
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"^[A-Za-z0-9]+\.\d+\.\d+\.", "");
+
+            // 3. Gỡ bỏ các chuỗi mã định danh kỹ thuật đuôi
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\.CT\s+tu\s+.*$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\s*-\s*Ma\s+GD\s+.*$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\s*-\s*Ma\s+giao\s+dich.*$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\s*-\s*Trace\s+\d+.*$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // 4. Gỡ bỏ mã FT hoặc mã tham chiếu cuối câu
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+FT\d+\s+[A-Za-z0-9/]+.*$", "");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+[A-Za-z0-9]{6,}/[A-Za-z0-9]+.*$", "");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"^MBCT\s+", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // 5. Chuẩn hóa các dịch vụ phổ biến
+            if (text.Contains("AP-CASHIN", StringComparison.OrdinalIgnoreCase))
+                return "Nạp tiền ví Apple Pay";
+            if (text.Contains("MOMO-CASHIN", StringComparison.OrdinalIgnoreCase))
+                return "Nạp tiền ví MoMo";
+            if (text.Contains("QRCODE VNPAY", StringComparison.OrdinalIgnoreCase))
+                return "Thanh toán VNPAY QR";
+            if (text.Contains("RetailVisa", StringComparison.OrdinalIgnoreCase))
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(text, @"-([^-]+)-The\s+\d+");
+                return m.Success ? $"Thanh toán Visa ({m.Groups[1].Value.Trim()})" : "Giao dịch thẻ Visa";
+            }
+            if (text.Contains("24DH113351DaoTuanPhucPM2401", StringComparison.OrdinalIgnoreCase))
+                return "Đào Tuấn Phúc (PM2401)";
+            if (text.Equals("DAO TUAN PHUC chuyen", StringComparison.OrdinalIgnoreCase))
+                return "DAO TUAN PHUC chuyen tien";
+
+            text = text.Trim();
+            return string.IsNullOrWhiteSpace(text) ? "Giao dịch ngân hàng" : text;
         }
     }
 

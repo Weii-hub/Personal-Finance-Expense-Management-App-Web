@@ -108,3 +108,17 @@
     background: #ff8e75;
 }
 
+/* Tinh chỉnh chiều cao và căn chỉnh hàng giao dịch gọn gàng */
+.transaction-table-scroll table td {
+    padding: 0.65rem 0.75rem;
+    vertical-align: middle;
+}
+
+.transaction-table-scroll table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.transaction-table-scroll table tbody tr:hover {
+    background-color: #fff9f8;
+}
+

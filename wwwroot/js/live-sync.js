@@ -163,30 +163,30 @@
 
                 const rowHtml = `
                     <tr id="tx-row-${tx.id}" class="live-row-enter">
-                        <td>
+                        <td style="max-width: 380px;">
                             <div class="d-flex align-items-center">
-                                <div class="transaction-badge-icon" style="background: color-mix(in srgb, ${catColor} 15%, white); color: ${catColor};">
+                                <div class="transaction-badge-icon flex-shrink-0" style="background: color-mix(in srgb, ${catColor} 15%, white); color: ${catColor};">
                                     <i class="fa-solid ${catIcon}"></i>
                                 </div>
-                                <div>
-                                    <div class="fw-bold text-dark">${tx.categoryName}</div>
-                                    ${tx.note ? `<small class="text-muted">${tx.note}</small>` : ""}
+                                <div style="min-width: 0;">
+                                    <div class="fw-bold text-dark text-truncate">${tx.categoryName}</div>
+                                    ${tx.note ? `<small class="text-muted text-truncate d-block" style="max-width: 340px;" title="${tx.note}">${tx.note}</small>` : ""}
                                 </div>
                             </div>
                         </td>
-                        <td>
+                        <td class="text-nowrap">
                             <span class="badge-wallet">
                                 <i class="fa-solid ${tx.walletIcon || "fa-wallet"} me-1"></i>
                                 ${tx.walletName}
                             </span>
                         </td>
-                        <td>
+                        <td class="text-nowrap">
                             <small class="text-muted">
                                 <i class="fa-regular fa-clock me-1"></i>
                                 ${tx.date}
                             </small>
                         </td>
-                        <td class="text-end">
+                        <td class="text-end text-nowrap">
                             <span class="${amountClass}">
                                 ${tx.formattedAmount}
                             </span>

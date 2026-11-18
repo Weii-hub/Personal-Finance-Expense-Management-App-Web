@@ -174,33 +174,33 @@
                             var categoryIcon = string.IsNullOrEmpty(item.Category?.Icon) ? (isIncome ? "fa-wallet" : "fa-tag") : item.Category.Icon;
 
                             <tr>
-                                <td>
+                                <td style="max-width: 380px;">
                                     <div class="d-flex align-items-center">
-                                        <div class="transaction-badge-icon" style="background: color-mix(in srgb, @categoryColor 15%, white); color: @categoryColor;">
+                                        <div class="transaction-badge-icon flex-shrink-0" style="background: color-mix(in srgb, @categoryColor 15%, white); color: @categoryColor;">
                                             <i class="fa-solid @categoryIcon"></i>
                                         </div>
-                                        <div>
-                                            <div class="fw-bold text-dark">@(item.Category?.Name ?? "Không rõ")</div>
+                                        <div style="min-width: 0;">
+                                            <div class="fw-bold text-dark text-truncate">@(item.Category?.Name ?? "Không rõ")</div>
                                             @if (!string.IsNullOrEmpty(item.Note))
                                             {
-                                                <small class="text-muted">@item.Note</small>
+                                                <small class="text-muted text-truncate d-block" style="max-width: 340px;" title="@item.Note">@item.Note</small>
                                             }
                                         </div>
                                     </div>
                                 </td>
-                                <td>
+                                <td class="text-nowrap">
                                     <span class="badge-wallet">
                                         <i class="fa-solid @(item.Wallet?.Icon ?? "fa-wallet") me-1"></i>
                                         @(item.Wallet?.Name ?? "Ví không tên")
                                     </span>
                                 </td>
-                                <td>
+                                <td class="text-nowrap">
                                     <small class="text-muted">
                                         <i class="fa-regular fa-clock me-1"></i>
                                         @item.TransactionDate.ToString("dd/MM/yyyy HH:mm")
                                     </small>
                                 </td>
-                                <td class="text-end">
+                                <td class="text-end text-nowrap">
                                     <span class="@(isIncome ? "amount-income" : "amount-expense")">
                                         @(isIncome ? "+" : "-")@item.Amount.ToString("N0") đ
                                     </span>

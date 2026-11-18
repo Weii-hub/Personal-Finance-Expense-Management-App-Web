@@ -136,7 +136,7 @@
                                     </span>
                                     @if (!string.IsNullOrEmpty(t.Note))
                                     {
-                                        <div><small class="text-muted fst-italic">@t.Note</small></div>
+                                        <div><small class="text-muted fst-italic text-truncate d-inline-block" style="max-width: 220px;" title="@t.Note">@t.Note</small></div>
                                     }
                                 </div>
                             </div>
