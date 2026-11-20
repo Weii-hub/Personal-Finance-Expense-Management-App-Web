@@ -117,6 +117,30 @@ namespace PersonalFinanceApp.Models.ViewModels
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
+    public class ResetPinWithOtpViewModel
+    {
+        public string? Email { get; set; }
+        public string? ReturnUrl { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập mã OTP 6 chữ số")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã OTP phải gồm đúng 6 chữ số")]
+        [RegularExpression(@"^\d{6}$", ErrorMessage = "Mã OTP chỉ bao gồm chữ số")]
+        [Display(Name = "Mã xác thực OTP")]
+        public string OtpCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập Mã PIN mới (6 chữ số)")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã PIN phải có đúng 6 chữ số")]
+        [RegularExpression(@"^\d{6}$", ErrorMessage = "Mã PIN chỉ bao gồm các chữ số (0-9)")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mã PIN mới (6 số)")]
+        public string NewPin { get; set; } = string.Empty;
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Xác nhận lại Mã PIN mới")]
+        [Compare("NewPin", ErrorMessage = "Mã PIN mới và xác nhận mã PIN không khớp nhau")]
+        public string ConfirmNewPin { get; set; } = string.Empty;
+    }
+
     public class ForgotPasswordApiRequest
     {
         public string? Email { get; set; }

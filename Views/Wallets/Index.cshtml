@@ -354,7 +354,12 @@
                 <form id="setupPinForm" onsubmit="submitSetPin(event)">
                     <!-- Ô nhập PIN hiện tại (Bắt buộc khi ĐÃ CÓ PIN để bảo mật chống người khác đổi trộm) -->
                     <div class="mb-3" id="currentPinGroup" style="display: none;">
-                        <label class="form-label small fw-bold text-danger">Nhập Mã PIN hiện tại <span class="text-danger">*</span>:</label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-bold text-danger mb-0">Nhập Mã PIN hiện tại <span class="text-danger">*</span>:</label>
+                            <a href="javascript:void(0)" onclick="openForgotPinModal()" class="text-primary small text-decoration-none fw-semibold">
+                                <i class="fa-solid fa-circle-question me-1"></i> Quên mã PIN?
+                            </a>
+                        </div>
                         <input type="password" id="currentPin" class="form-control form-control-lg text-center fw-bold fs-4 border-danger-subtle" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" />
                     </div>
 
@@ -402,7 +407,79 @@
                             <i class="fa-solid fa-check me-1"></i> Xác Nhận
                         </button>
                     </div>
+                    <div class="text-center mt-3">
+                        <a href="javascript:void(0)" onclick="openForgotPinModal()" class="text-primary small text-decoration-none fw-semibold">
+                            <i class="fa-solid fa-circle-question me-1"></i> Quên mã PIN bảo mật?
+                        </a>
+                    </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL 4: KHÔI PHỤC MÃ PIN BẢO MẬT (FORGOT PIN VIA EMAIL OTP) -->
+<!-- ============================================================ -->
+<div class="modal fade" id="forgotPinModal" tabindex="-1" aria-labelledby="forgotPinModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark" id="forgotPinModalLabel">
+                        <i class="fa-solid fa-shield-halved text-primary me-2"></i> Khôi Phục Mã PIN
+                    </h5>
+                    <p class="text-muted small mb-0">Xác minh mã OTP qua Email để tạo mã PIN 6 số mới</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="forgotPinStep1" class="text-center">
+                    <div class="display-5 mb-3">📬🔐</div>
+                    <p class="text-muted small mb-4">
+                        Hệ thống sẽ gửi mã xác thực OTP 6 chữ số đến địa chỉ email tài khoản của bạn để xác minh và cho phép đặt lại Mã PIN.
+                    </p>
+                    <div class="d-grid">
+                        <button type="button" id="btnSendPinOtp" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm" onclick="sendForgotPinOtp()">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Gửi mã OTP về Email
+                        </button>
+                    </div>
+                </div>
+
+                <div id="forgotPinStep2" style="display: none;">
+                    <div class="alert alert-info border-0 rounded-4 p-2 small mb-3 text-center" style="background: #eef2ff;">
+                        <i class="fa-solid fa-envelope-circle-check text-primary me-1"></i> Mã OTP đã được gửi đến hộp thư của bạn!
+                    </div>
+
+                    <form id="forgotPinForm" onsubmit="submitResetPinWithOtp(event)">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Mã OTP (6 chữ số từ email):</label>
+                            <input type="text" id="forgotPinOtpCode" class="form-control form-control-lg text-center fw-bold fs-3" maxlength="6" inputmode="numeric" placeholder="••••••" required />
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3 px-1 small">
+                            <span class="text-muted"><i class="fa-regular fa-clock me-1 text-warning"></i> Hết hạn: <span id="forgotPinCountdown" class="text-danger fw-bold">05:00</span></span>
+                            <a href="javascript:void(0)" class="text-primary text-decoration-none fw-semibold" onclick="sendForgotPinOtp()">Gửi lại mã OTP</a>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Mã PIN MỚI (đúng 6 chữ số):</label>
+                            <input type="password" id="forgotNewPin" class="form-control form-control-lg text-center fw-bold fs-4" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required />
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-muted">Xác nhận lại Mã PIN mới:</label>
+                            <input type="password" id="forgotConfirmNewPin" class="form-control form-control-lg text-center fw-bold fs-4" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required />
+                        </div>
+                        <div class="d-grid mb-2">
+                            <button type="submit" id="btnSubmitResetPin" class="btn btn-success btn-lg rounded-pill fw-bold shadow-sm">
+                                <i class="fa-solid fa-shield-check me-1"></i> Cập nhật Mã PIN mới
+                            </button>
+                        </div>
+                    </form>
+                    <div id="forgotPinDebugBadge" class="text-center mt-2" style="display: none;">
+                        <span class="badge bg-light text-secondary border px-3 py-1 rounded-pill small">
+                            💡 Demo: Mã OTP là <code id="forgotPinDebugCode" class="fw-bold text-primary"></code>
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -584,6 +661,133 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-bolt me-1"></i> Kích Hoạt Biến Động Số Dư';
+            }
+        }
+
+        // ============================================================
+        // XỬ LÝ QUÊN MÃ PIN QUA EMAIL OTP
+        // ============================================================
+        let forgotPinTimer = null;
+
+        function openForgotPinModal() {
+            // Đóng các modal khác nếu đang mở
+            const setupModalEl = document.getElementById('setupPinModal');
+            const verifyModalEl = document.getElementById('verifyPinModal');
+            if (setupModalEl) {
+                const sm = bootstrap.Modal.getInstance(setupModalEl);
+                if (sm) sm.hide();
+            }
+            if (verifyModalEl) {
+                const vm = bootstrap.Modal.getInstance(verifyModalEl);
+                if (vm) vm.hide();
+            }
+
+            document.getElementById('forgotPinStep1').style.display = 'block';
+            document.getElementById('forgotPinStep2').style.display = 'none';
+            document.getElementById('forgotPinDebugBadge').style.display = 'none';
+            document.getElementById('forgotPinOtpCode').value = '';
+            document.getElementById('forgotNewPin').value = '';
+            document.getElementById('forgotConfirmNewPin').value = '';
+
+            const forgotModal = new bootstrap.Modal(document.getElementById('forgotPinModal'));
+            forgotModal.show();
+        }
+
+        async function sendForgotPinOtp() {
+            const btn = document.getElementById('btnSendPinOtp');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang gửi OTP qua Email...';
+            }
+
+            try {
+                const res = await fetch('/Wallets/SendForgotPinOtp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('forgotPinStep1').style.display = 'none';
+                    document.getElementById('forgotPinStep2').style.display = 'block';
+
+                    if (data.debugOtp) {
+                        document.getElementById('forgotPinDebugCode').innerText = data.debugOtp;
+                        document.getElementById('forgotPinDebugBadge').style.display = 'block';
+                    }
+
+                    // Bắt đầu đếm ngược 5 phút
+                    let timeLeft = 300;
+                    const countdownEl = document.getElementById('forgotPinCountdown');
+                    if (forgotPinTimer) clearInterval(forgotPinTimer);
+                    forgotPinTimer = setInterval(function () {
+                        timeLeft--;
+                        if (timeLeft <= 0) {
+                            clearInterval(forgotPinTimer);
+                            countdownEl.innerText = "00:00 (Hết hạn)";
+                        } else {
+                            let m = Math.floor(timeLeft / 60);
+                            let s = timeLeft % 60;
+                            countdownEl.innerText = `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+                        }
+                    }, 1000);
+                } else {
+                    alert(data.message || 'Không thể gửi mã OTP.');
+                }
+            } catch (err) {
+                alert('Lỗi kết nối khi gửi OTP: ' + err);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-paper-plane me-1"></i> Gửi mã OTP về Email';
+                }
+            }
+        }
+
+        async function submitResetPinWithOtp(e) {
+            e.preventDefault();
+            const otpCode = document.getElementById('forgotPinOtpCode').value.trim();
+            const newPin = document.getElementById('forgotNewPin').value.trim();
+            const confirmNewPin = document.getElementById('forgotConfirmNewPin').value.trim();
+
+            if (otpCode.length !== 6) {
+                alert('Vui lòng nhập đúng 6 chữ số mã OTP xác thực!');
+                return;
+            }
+
+            if (newPin.length !== 6 || confirmNewPin.length !== 6) {
+                alert('Mã PIN mới phải bao gồm đúng 6 chữ số!');
+                return;
+            }
+
+            if (newPin !== confirmNewPin) {
+                alert('Mã PIN mới và xác nhận mã PIN không trùng khớp!');
+                return;
+            }
+
+            const btn = document.getElementById('btnSubmitResetPin');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang xác thực...';
+
+            try {
+                const res = await fetch('/Wallets/ResetPinWithOtp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ otpCode, newPin, confirmNewPin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    userHasPin = true;
+                    bootstrap.Modal.getInstance(document.getElementById('forgotPinModal')).hide();
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Không thể khôi phục mã PIN.');
+                }
+            } catch (err) {
+                alert('Lỗi máy chủ: ' + err);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-shield-check me-1"></i> Cập nhật Mã PIN mới';
             }
         }
     </script>

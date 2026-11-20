@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PersonalFinanceApp.Models;
+using PersonalFinanceApp.Models.ViewModels;
+using PersonalFinanceApp.Services;
 
 namespace PersonalFinanceApp.Controllers
 {
@@ -12,11 +14,22 @@ namespace PersonalFinanceApp.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IEmailSender _emailSender;
+        private readonly IOtpService _otpService;
+        private readonly ILogger<WalletsController> _logger;
 
-        public WalletsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public WalletsController(
+            ApplicationDbContext context, 
+            UserManager<ApplicationUser> userManager,
+            IEmailSender emailSender,
+            IOtpService otpService,
+            ILogger<WalletsController> logger)
         {
             _context = context;
             _userManager = userManager;
+            _emailSender = emailSender;
+            _otpService = otpService;
+            _logger = logger;
         }
 
         private string GetCurrentUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -264,6 +277,184 @@ namespace PersonalFinanceApp.Controllers
             });
         }
 
+        // ============================================================
+        // TÍNH NĂNG: QUÊN MÃ PIN BẢO MẬT (FORGOT PIN VIA EMAIL OTP)
+        // ============================================================
+
+        // POST: /Wallets/SendForgotPinOtp (Gửi mã OTP 6 số về email khi người dùng quên mã PIN)
+        [HttpPost]
+        public async Task<IActionResult> SendForgotPinOtp()
+        {
+            var userId = GetCurrentUserId();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy người dùng." });
+            }
+
+            if (string.IsNullOrEmpty(user.Email))
+            {
+                return Json(new { success = false, message = "Tài khoản của bạn chưa có email để nhận mã xác thực OTP." });
+            }
+
+            var otp = _otpService.GenerateOtp("FORGOT_PIN_OTP_" + user.Id, TimeSpan.FromMinutes(5));
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailSender.SendOtpEmailAsync(user.Email, user.FullName, otp, "khôi phục Mã PIN bảo mật ví");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi khi gửi email OTP khôi phục PIN tới {Email}", user.Email);
+                }
+            });
+
+            return Json(new
+            {
+                success = true,
+                message = $"Mã OTP 6 chữ số đã được gửi đến email: {user.Email}. Vui lòng kiểm tra hộp thư!",
+                debugOtp = otp
+            });
+        }
+
+        // POST: /Wallets/ResetPinWithOtp (Xác thực OTP và đặt Mã PIN mới qua AJAX)
+        [HttpPost]
+        public async Task<IActionResult> ResetPinWithOtp([FromBody] ResetPinWithOtpRequest req)
+        {
+            if (req == null || string.IsNullOrWhiteSpace(req.OtpCode) || req.OtpCode.Length != 6)
+            {
+                return Json(new { success = false, message = "Vui lòng nhập đúng 6 chữ số mã OTP xác thực." });
+            }
+
+            if (string.IsNullOrWhiteSpace(req.NewPin) || req.NewPin.Length != 6 || !req.NewPin.All(char.IsDigit))
+            {
+                return Json(new { success = false, message = "Mã PIN mới phải bao gồm đúng 6 chữ số (0-9)." });
+            }
+
+            if (req.NewPin != req.ConfirmNewPin)
+            {
+                return Json(new { success = false, message = "Mã PIN mới xác nhận không trùng khớp. Vui lòng kiểm tra lại!" });
+            }
+
+            var userId = GetCurrentUserId();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return Json(new { success = false, message = "Không tìm thấy người dùng." });
+
+            var isValid = _otpService.ValidateOtp("FORGOT_PIN_OTP_" + user.Id, req.OtpCode);
+            if (!isValid)
+            {
+                return Json(new { success = false, message = "Mã xác thực OTP không chính xác hoặc đã hết hạn (sau 5 phút). Vui lòng thử lại hoặc bấm gửi lại mã!" });
+            }
+
+            user.SecurityPinHash = _userManager.PasswordHasher.HashPassword(user, req.NewPin);
+            await _userManager.UpdateAsync(user);
+
+            return Json(new
+            {
+                success = true,
+                message = "🎉 Khôi phục Mã PIN bảo mật thành công! Bạn có thể sử dụng mã PIN mới ngay bây giờ."
+            });
+        }
+
+        // GET: /Wallets/ForgotPin (Trang độc lập Khôi phục Mã PIN)
+        [HttpGet]
+        public async Task<IActionResult> ForgotPin(string? returnUrl = null)
+        {
+            var userId = GetCurrentUserId();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return RedirectToAction("Login", "Account");
+
+            var otp = _otpService.GenerateOtp("FORGOT_PIN_OTP_" + user.Id, TimeSpan.FromMinutes(5));
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailSender.SendOtpEmailAsync(user.Email!, user.FullName, otp, "khôi phục Mã PIN bảo mật ví");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi gửi email OTP khôi phục PIN tới {Email}", user.Email);
+                }
+            });
+
+            var model = new ResetPinWithOtpViewModel
+            {
+                Email = user.Email,
+                ReturnUrl = returnUrl
+            };
+
+            ViewBag.DebugOtp = otp;
+            return View(model);
+        }
+
+        // POST: /Wallets/ForgotPin (Xác nhận trang độc lập)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPin(ResetPinWithOtpViewModel model)
+        {
+            var userId = GetCurrentUserId();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return RedirectToAction("Login", "Account");
+
+            model.Email = user.Email;
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.DebugOtp = _otpService.GetCachedOtp("FORGOT_PIN_OTP_" + user.Id);
+                return View(model);
+            }
+
+            var isValid = _otpService.ValidateOtp("FORGOT_PIN_OTP_" + user.Id, model.OtpCode);
+            if (!isValid)
+            {
+                ModelState.AddModelError("OtpCode", "Mã xác thực OTP không chính xác hoặc đã hết hạn (sau 5 phút).");
+                ViewBag.DebugOtp = _otpService.GetCachedOtp("FORGOT_PIN_OTP_" + user.Id);
+                return View(model);
+            }
+
+            user.SecurityPinHash = _userManager.PasswordHasher.HashPassword(user, model.NewPin);
+            await _userManager.UpdateAsync(user);
+
+            TempData["SuccessMessage"] = "🎉 Khôi phục Mã PIN bảo mật thành công! Bạn đã có thể sử dụng Mã PIN mới.";
+            if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+            {
+                return Redirect(model.ReturnUrl);
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: /Wallets/ResendForgotPinOtp
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendForgotPinOtp()
+        {
+            var userId = GetCurrentUserId();
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return Json(new { success = false, message = "Không tìm thấy người dùng." });
+
+            var newOtp = _otpService.GenerateOtp("FORGOT_PIN_OTP_" + user.Id, TimeSpan.FromMinutes(5));
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailSender.SendOtpEmailAsync(user.Email!, user.FullName, newOtp, "khôi phục Mã PIN bảo mật ví");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi gửi lại mã OTP khôi phục PIN tới {Email}", user.Email);
+                }
+            });
+
+            return Json(new
+            {
+                success = true,
+                message = $"Mã OTP mới đã được gửi đến email: {user.Email}",
+                debugOtp = newOtp
+            });
+        }
+
         // POST: /Wallets/TogglePermission (Bật/Tắt công tắc quyền với xác thực PIN)
         [HttpPost]
         public async Task<IActionResult> TogglePermission([FromBody] TogglePermissionRequest req)
@@ -411,6 +602,13 @@ namespace PersonalFinanceApp.Controllers
         public string? CurrentPin { get; set; }
         public string Pin { get; set; } = string.Empty;
         public string ConfirmPin { get; set; } = string.Empty;
+    }
+
+    public class ResetPinWithOtpRequest
+    {
+        public string OtpCode { get; set; } = string.Empty;
+        public string NewPin { get; set; } = string.Empty;
+        public string ConfirmNewPin { get; set; } = string.Empty;
     }
 
     public class SimulateTransactionRequest
