@@ -1,11 +1,18 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PersonalFinanceApp.Models;
+using PersonalFinanceApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
+
+// Cấu hình SMTP Gmail & Dịch vụ gửi Email / OTP (Issue #24 & 2FA Login)
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.AddTransient<IEmailSender, EmailService>();
+builder.Services.AddSingleton<IOtpService, OtpService>();
 
 // Register DbContext with Supabase PostgreSQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

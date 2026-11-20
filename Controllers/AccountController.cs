@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using PersonalFinanceApp.Models;
 using PersonalFinanceApp.Models.ViewModels;
+using PersonalFinanceApp.Services;
 
 namespace PersonalFinanceApp.Controllers
 {
@@ -10,15 +11,24 @@ namespace PersonalFinanceApp.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ApplicationDbContext _context;
+        private readonly IEmailSender _emailSender;
+        private readonly IOtpService _otpService;
+        private readonly ILogger<AccountController> _logger;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            IEmailSender emailSender,
+            IOtpService otpService,
+            ILogger<AccountController> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _context = context;
+            _emailSender = emailSender;
+            _otpService = otpService;
+            _logger = logger;
         }
 
         // GET: /Account/Login
@@ -33,7 +43,7 @@ namespace PersonalFinanceApp.Controllers
             return View(new LoginViewModel());
         }
 
-        // POST: /Account/Login (Xử lý Đăng nhập thật bằng Identity - Issue #14)
+        // POST: /Account/Login (Xử lý Đăng nhập bước 1: Kiểm tra mật khẩu & kích hoạt OTP Xác thực 2 bước)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
@@ -45,60 +55,162 @@ namespace PersonalFinanceApp.Controllers
             }
 
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user != null)
+            if (user == null)
             {
-                // Kiểm tra trực tiếp xem tài khoản có đang bị khóa bởi Admin hay không
-                if (await _userManager.IsLockedOutAsync(user))
-                {
-                    ViewBag.IsLockedOut = true;
-                    ViewBag.LockoutMessage = $"🚫 TÀI KHOẢN ({user.Email}) ĐÃ BỊ KHÓA! Quản trị viên đã tạm thời khóa quyền truy cập. Vui lòng liên hệ Admin để được hỗ trợ mở khóa.";
-                    ModelState.AddModelError(string.Empty, "🚫 Tài khoản của bạn hiện đang bị Quản trị viên khóa. Không thể đăng nhập.");
-                    return View(model);
-                }
+                ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không chính xác.");
+                return View(model);
             }
 
-            var result = await _signInManager.PasswordSignInAsync(
-                model.Email,
-                model.Password,
-                model.RememberMe,
-                lockoutOnFailure: false);
-
-            if (result.IsLockedOut)
+            // Kiểm tra xem tài khoản có đang bị khóa bởi Admin hay không
+            if (await _userManager.IsLockedOutAsync(user))
             {
                 ViewBag.IsLockedOut = true;
-                ViewBag.LockoutMessage = "🚫 TÀI KHOẢN CỦA BẠN ĐÃ BỊ KHÓA! Quản trị viên đã tạm khóa quyền truy cập. Vui lòng liên hệ Admin để được hỗ trợ mở khóa.";
+                ViewBag.LockoutMessage = $"🚫 TÀI KHOẢN ({user.Email}) ĐÃ BỊ KHÓA! Quản trị viên đã tạm thời khóa quyền truy cập. Vui lòng liên hệ Admin để được hỗ trợ mở khóa.";
                 ModelState.AddModelError(string.Empty, "🚫 Tài khoản của bạn hiện đang bị Quản trị viên khóa. Không thể đăng nhập.");
                 return View(model);
             }
 
-            if (result.Succeeded)
+            // Kiểm tra mật khẩu (chưa đăng nhập ngay để tiến hành xác thực 2 bước 2FA)
+            var passwordValid = await _userManager.CheckPasswordAsync(user, model.Password);
+            if (!passwordValid)
             {
-                // Kiểm tra lại sau khi đăng nhập đề phòng trường hợp vừa bị khóa
-                if (user != null && await _userManager.IsLockedOutAsync(user))
-                {
-                    await _signInManager.SignOutAsync();
-                    ViewBag.IsLockedOut = true;
-                    ViewBag.LockoutMessage = "🚫 TÀI KHOẢN CỦA BẠN ĐÃ BỊ KHÓA! Quản trị viên đã tạm khóa tài khoản này.";
-                    ModelState.AddModelError(string.Empty, "🚫 Tài khoản của bạn hiện đang bị Quản trị viên khóa.");
-                    return View(model);
-                }
-
-                if (user != null && await _userManager.IsInRoleAsync(user, "Admin"))
-                {
-                    TempData["SuccessMessage"] = $"Xin chào Quản trị viên ({user.FullName})!";
-                    return RedirectToAction("Index", "Admin");
-                }
-
-                TempData["SuccessMessage"] = $"Chào mừng {(user?.FullName ?? model.Email)} đã đăng nhập!";
-                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-                {
-                    return Redirect(returnUrl);
-                }
-                return RedirectToAction("Index", "Transactions");
+                ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không chính xác.");
+                return View(model);
             }
 
-            ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không chính xác.");
+            // Sinh mã OTP 6 chữ số (hiệu lực 5 phút)
+            var otp = _otpService.GenerateOtp("LOGIN_OTP_" + user.Id, TimeSpan.FromMinutes(5));
+
+            // Gửi email OTP thực tế qua Google Gmail SMTP
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailSender.SendOtpEmailAsync(user.Email!, user.FullName, otp, "xác thực đăng nhập 2 bước");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi gửi email xác thực 2FA tới {Email}", user.Email);
+                }
+            });
+
+            TempData["SuccessMessage"] = $"Mã xác thực OTP 6 chữ số đã được gửi đến email: {user.Email}";
+            TempData["DebugOtp"] = otp; // Hỗ trợ demo học tập trong trường hợp mạng lớp học chặn cổng SMTP
+
+            return RedirectToAction(nameof(VerifyLoginOtp), new { userId = user.Id, returnUrl });
+        }
+
+        // GET: /Account/VerifyLoginOtp (Màn hình nhập mã xác thực 2 bước)
+        [HttpGet]
+        public async Task<IActionResult> VerifyLoginOtp(string? userId, string? returnUrl = null)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                TempData["ErrorMessage"] = "Phiên xác thực đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy thông tin tài khoản người dùng.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var cachedOtp = _otpService.GetCachedOtp("LOGIN_OTP_" + user.Id);
+            if (cachedOtp == null)
+            {
+                TempData["ErrorMessage"] = "Mã xác thực OTP đã hết hạn (sau 5 phút). Vui lòng đăng nhập lại để nhận mã mới.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            var model = new VerifyLoginOtpViewModel
+            {
+                UserId = user.Id,
+                Email = user.Email ?? "",
+                FullName = user.FullName,
+                RememberMe = false,
+                ReturnUrl = returnUrl
+            };
+
+            ViewBag.DebugOtp = TempData["DebugOtp"] as string ?? cachedOtp;
             return View(model);
+        }
+
+        // POST: /Account/VerifyLoginOtp (Xác thực mã OTP và cấp phiên đăng nhập chính thức)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyLoginOtp(VerifyLoginOtpViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewBag.DebugOtp = _otpService.GetCachedOtp("LOGIN_OTP_" + model.UserId);
+                return View(model);
+            }
+
+            var isValid = _otpService.ValidateOtp("LOGIN_OTP_" + model.UserId, model.OtpCode);
+            if (!isValid)
+            {
+                ModelState.AddModelError("OtpCode", "Mã xác thực OTP không chính xác hoặc đã hết hạn (sau 5 phút). Vui lòng thử lại hoặc bấm 'Gửi lại mã OTP'.");
+                ViewBag.DebugOtp = _otpService.GetCachedOtp("LOGIN_OTP_" + model.UserId);
+                return View(model);
+            }
+
+            var user = await _userManager.FindByIdAsync(model.UserId);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy thông tin tài khoản người dùng.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            // Cấp phiên đăng nhập Identity chính thức
+            await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
+
+            if (await _userManager.IsInRoleAsync(user, "Admin"))
+            {
+                TempData["SuccessMessage"] = $"Xác thực 2 bước thành công! Xin chào Quản trị viên ({user.FullName}).";
+                return RedirectToAction("Index", "Admin");
+            }
+
+            TempData["SuccessMessage"] = $"Xác thực 2 bước thành công! Chào mừng {(user.FullName ?? user.Email)} đã đăng nhập.";
+            if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+            {
+                return Redirect(model.ReturnUrl);
+            }
+            return RedirectToAction("Index", "Transactions");
+        }
+
+        // POST: /Account/ResendLoginOtp (Gửi lại mã OTP đăng nhập mới)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendLoginOtp(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy tài khoản người dùng." });
+            }
+
+            var newOtp = _otpService.GenerateOtp("LOGIN_OTP_" + user.Id, TimeSpan.FromMinutes(5));
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailSender.SendOtpEmailAsync(user.Email!, user.FullName, newOtp, "xác thực đăng nhập 2 bước");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi gửi lại mã OTP đăng nhập tới {Email}", user.Email);
+                }
+            });
+
+            TempData["DebugOtp"] = newOtp;
+            return Json(new
+            {
+                success = true,
+                message = $"Mã OTP mới đã được gửi đến email: {user.Email}",
+                debugOtp = newOtp
+            });
         }
 
         // GET: /Account/Register
@@ -162,13 +274,13 @@ namespace PersonalFinanceApp.Controllers
             return View(model);
         }
 
-        // GET: /Account/ForgotPassword (Issue #24)
+        // GET: /Account/ForgotPassword
         public IActionResult ForgotPassword()
         {
             return View(new ForgotPasswordViewModel());
         }
 
-        // POST: /Account/ForgotPassword (Tạo mã Token đặt lại mật khẩu chuẩn Identity Cryptography)
+        // POST: /Account/ForgotPassword (Gửi mã OTP 6 chữ số đến email để khôi phục mật khẩu)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
@@ -181,34 +293,133 @@ namespace PersonalFinanceApp.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                // Theo chuẩn bảo mật OWASP: Không tiết lộ email có tồn tại hay không, nhưng hiển thị xác nhận đã xử lý
-                ViewBag.UserFound = false;
-                ViewBag.TargetEmail = model.Email;
-                return View("ForgotPasswordConfirmation");
+                ModelState.AddModelError("Email", "Địa chỉ email này chưa được đăng ký trong hệ thống CashFlow.");
+                return View(model);
             }
 
-            // Sinh mã Token đặt lại mật khẩu mã hóa mật mã học (Identity Token Provider)
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var otp = _otpService.GenerateOtp("RESET_OTP_" + user.Email!.ToLowerInvariant(), TimeSpan.FromMinutes(5));
 
-            // Tạo link đặt lại mật khẩu hoàn chỉnh
-            var resetLink = Url.Action("ResetPassword", "Account", new { token, email = user.Email }, Request.Scheme);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailSender.SendOtpEmailAsync(user.Email!, user.FullName, otp, "đặt lại mật khẩu");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi gửi email OTP đặt lại mật khẩu tới {Email}", user.Email);
+                }
+            });
 
-            ViewBag.UserFound = true;
-            ViewBag.TargetEmail = user.Email;
-            ViewBag.FullName = user.FullName;
-            ViewBag.ResetLink = resetLink;
-            ViewBag.Token = token;
-
-            return View("ForgotPasswordConfirmation");
+            TempData["SuccessMessage"] = $"Mã OTP 6 chữ số đã được gửi đến email: {user.Email}. Vui lòng kiểm tra hộp thư!";
+            TempData["DebugResetOtp"] = otp;
+            return RedirectToAction(nameof(ResetPasswordOtp), new { email = user.Email });
         }
 
-        // GET: /Account/ResetPassword
+        // GET: /Account/ResetPasswordOtp (Màn hình nhập mã OTP và mật khẩu mới)
+        [HttpGet]
+        public IActionResult ResetPasswordOtp(string? email = null)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                TempData["ErrorMessage"] = "Vui lòng nhập địa chỉ email tài khoản cần khôi phục.";
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            var model = new ResetPasswordOtpViewModel
+            {
+                Email = email
+            };
+
+            ViewBag.DebugOtp = TempData["DebugResetOtp"] as string ?? _otpService.GetCachedOtp("RESET_OTP_" + email.ToLowerInvariant());
+            return View(model);
+        }
+
+        // POST: /Account/ResetPasswordOtp (Xác thực OTP và đặt lại mật khẩu mới)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPasswordOtp(ResetPasswordOtpViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                ViewBag.DebugOtp = _otpService.GetCachedOtp("RESET_OTP_" + model.Email.ToLowerInvariant());
+                return View(model);
+            }
+
+            var isValid = _otpService.ValidateOtp("RESET_OTP_" + model.Email.ToLowerInvariant(), model.OtpCode);
+            if (!isValid)
+            {
+                ModelState.AddModelError("OtpCode", "Mã xác thực OTP không chính xác hoặc đã hết hạn (sau 5 phút). Vui lòng thử lại hoặc bấm 'Gửi lại mã OTP'.");
+                ViewBag.DebugOtp = _otpService.GetCachedOtp("RESET_OTP_" + model.Email.ToLowerInvariant());
+                return View(model);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy tài khoản người dùng tương ứng.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            // Sinh mã token đặt lại mật khẩu của Identity
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "🎉 Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới ngay.";
+                return RedirectToAction(nameof(Login));
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            ViewBag.DebugOtp = _otpService.GetCachedOtp("RESET_OTP_" + model.Email.ToLowerInvariant());
+            return View(model);
+        }
+
+        // POST: /Account/ResendResetOtp (Gửi lại mã OTP đặt lại mật khẩu)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendResetOtp(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return Json(new { success = false, message = "Email không tồn tại trong hệ thống." });
+            }
+
+            var newOtp = _otpService.GenerateOtp("RESET_OTP_" + user.Email!.ToLowerInvariant(), TimeSpan.FromMinutes(5));
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailSender.SendOtpEmailAsync(user.Email!, user.FullName, newOtp, "đặt lại mật khẩu");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi gửi lại mã OTP đặt lại mật khẩu tới {Email}", user.Email);
+                }
+            });
+
+            TempData["DebugResetOtp"] = newOtp;
+            return Json(new
+            {
+                success = true,
+                message = $"Mã OTP mới đã được gửi đến email: {user.Email}",
+                debugOtp = newOtp
+            });
+        }
+
+        // GET: /Account/ResetPassword (Tương thích link cũ hoặc API)
         public IActionResult ResetPassword(string? token = null, string? email = null)
         {
             if (string.IsNullOrEmpty(token) || string.IsNullOrEmpty(email))
             {
                 TempData["ErrorMessage"] = "Yêu cầu đặt lại mật khẩu không hợp lệ hoặc thiếu mã bảo mật.";
-                return RedirectToAction("Login");
+                return RedirectToAction(nameof(Login));
             }
 
             var model = new ResetPasswordViewModel
@@ -219,7 +430,7 @@ namespace PersonalFinanceApp.Controllers
             return View(model);
         }
 
-        // POST: /Account/ResetPassword (Xác nhận đổi mật khẩu mới)
+        // POST: /Account/ResetPassword
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
@@ -233,14 +444,14 @@ namespace PersonalFinanceApp.Controllers
             if (user == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy tài khoản người dùng tương ứng.";
-                return RedirectToAction("Login");
+                return RedirectToAction(nameof(Login));
             }
 
             var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
             if (result.Succeeded)
             {
                 TempData["SuccessMessage"] = "🎉 Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới ngay bây giờ.";
-                return RedirectToAction("Login");
+                return RedirectToAction(nameof(Login));
             }
 
             foreach (var error in result.Errors)

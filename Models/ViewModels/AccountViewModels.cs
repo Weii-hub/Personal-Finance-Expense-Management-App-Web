@@ -72,6 +72,51 @@ namespace PersonalFinanceApp.Models.ViewModels
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
+    public class VerifyLoginOtpViewModel
+    {
+        [Required]
+        public string UserId { get; set; } = string.Empty;
+
+        public string Email { get; set; } = string.Empty;
+
+        public string? FullName { get; set; }
+
+        public string? ReturnUrl { get; set; }
+
+        public bool RememberMe { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập mã OTP 6 chữ số")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã OTP phải gồm đúng 6 chữ số")]
+        [RegularExpression(@"^\d{6}$", ErrorMessage = "Mã OTP chỉ bao gồm chữ số")]
+        [Display(Name = "Mã xác thực OTP")]
+        public string OtpCode { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordOtpViewModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập Email")]
+        [EmailAddress(ErrorMessage = "Địa chỉ Email không hợp lệ")]
+        [Display(Name = "Địa chỉ Email")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập mã OTP 6 chữ số")]
+        [StringLength(6, MinimumLength = 6, ErrorMessage = "Mã OTP phải gồm đúng 6 chữ số")]
+        [RegularExpression(@"^\d{6}$", ErrorMessage = "Mã OTP chỉ bao gồm chữ số")]
+        [Display(Name = "Mã xác thực OTP")]
+        public string OtpCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập Mật khẩu mới")]
+        [StringLength(100, ErrorMessage = "Mật khẩu phải có ít nhất {2} ký tự", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu mới")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Xác nhận mật khẩu mới")]
+        [Compare("NewPassword", ErrorMessage = "Mật khẩu và xác nhận mật khẩu không khớp nhau")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
     public class ForgotPasswordApiRequest
     {
         public string? Email { get; set; }

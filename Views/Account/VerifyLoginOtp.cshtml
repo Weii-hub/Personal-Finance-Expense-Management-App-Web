@@ -1,0 +1,157 @@
+@model PersonalFinanceApp.Models.ViewModels.VerifyLoginOtpViewModel
+
+@{
+    ViewData["Title"] = "Xác Thực Đăng Nhập 2FA";
+    string debugOtp = ViewBag.DebugOtp as string ?? "";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 480px;">
+    <div class="card border-0 rounded-4 shadow-sm p-4" style="border: 2px solid #e0e7ff !important; background: #ffffff;">
+        <div class="text-center mb-4">
+            <div class="display-4 mb-2">🛡️🔐</div>
+            <h3 class="fw-bold text-dark mb-1">Xác thực 2 bước (2FA)</h3>
+            <p class="text-muted small mb-0">Bảo mật tài khoản nâng cao bằng mã OTP</p>
+        </div>
+
+        @if (TempData["SuccessMessage"] is string msg)
+        {
+            <div class="alert alert-success alert-dismissible fade show rounded-4 small" role="alert">
+                <i class="fa-solid fa-circle-check me-2"></i> @msg
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+            </div>
+        }
+
+        @if (TempData["ErrorMessage"] is string errMsg)
+        {
+            <div class="alert alert-danger alert-dismissible fade show rounded-4 small" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> @errMsg
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+            </div>
+        }
+
+        <div class="alert alert-primary border-0 rounded-4 p-3 mb-4" style="background: #eef2ff;">
+            <div class="d-flex align-items-center">
+                <i class="fa-solid fa-paper-plane text-primary fs-4 me-3"></i>
+                <div>
+                    <div class="small text-muted">Mã xác thực OTP đã được gửi đến:</div>
+                    <strong class="text-dark">@Model.Email</strong>
+                </div>
+            </div>
+        </div>
+
+        <form asp-action="VerifyLoginOtp" method="post" autocomplete="off">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="UserId" />
+            <input type="hidden" asp-for="Email" />
+            <input type="hidden" asp-for="FullName" />
+            <input type="hidden" asp-for="RememberMe" />
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3 fw-bold" role="alert"></div>
+
+            <!-- OTP Input -->
+            <div class="mb-3 text-center">
+                <label asp-for="OtpCode" class="form-label fw-bold mb-2">Nhập mã OTP (6 chữ số)</label>
+                <input asp-for="OtpCode" 
+                       class="form-control form-control-lg text-center fw-bold fs-2" 
+                       placeholder="••••••" 
+                       maxlength="6" 
+                       inputmode="numeric" 
+                       pattern="[0-9]*" 
+                       style="letter-spacing: 12px; font-family: monospace; border: 2px solid #c7d2fe; border-radius: 14px;" 
+                       autofocus />
+                <span asp-validation-for="OtpCode" class="text-danger small d-block mt-2"></span>
+            </div>
+
+            <!-- Countdown Timer & Resend Button -->
+            <div class="d-flex justify-content-between align-items-center mb-4 px-1">
+                <div class="small text-muted">
+                    <i class="fa-regular fa-clock me-1 text-warning"></i>
+                    Hết hạn sau: <span id="otpCountdown" class="fw-bold text-danger">05:00</span>
+                </div>
+                <button type="button" id="btnResendOtp" class="btn btn-link btn-sm text-decoration-none fw-semibold p-0 text-primary">
+                    <i class="fa-solid fa-rotate-right me-1"></i> Gửi lại mã OTP
+                </button>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-grid mb-3">
+                <button type="submit" class="btn btn-primary btn-lg shadow-sm rounded-pill fw-bold" style="background: #4f46e5; border-color: #4f46e5;">
+                    <i class="fa-solid fa-shield-halved me-1"></i> Xác nhận & Đăng nhập
+                </button>
+            </div>
+
+            <div class="text-center text-muted small">
+                Không phải tài khoản của bạn? 
+                <a asp-action="Login" class="text-primary fw-bold text-decoration-none">Đăng nhập tài khoản khác</a>
+            </div>
+        </form>
+
+        @if (!string.IsNullOrEmpty(debugOtp))
+        {
+            <div class="mt-4 pt-3 border-top text-center">
+                <div class="badge bg-light text-secondary border px-3 py-2 rounded-pill small fw-normal">
+                    💡 <strong>Demo Hỗ trợ Báo cáo:</strong> Mã OTP là <code class="fw-bold text-primary fs-6">@debugOtp</code>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        // Countdown 5 phút
+        let timeLeft = 300;
+        const countdownEl = document.getElementById("otpCountdown");
+        const btnResend = document.getElementById("btnResendOtp");
+
+        const timer = setInterval(function () {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                countdownEl.innerText = "00:00 (Đã hết hạn)";
+            } else {
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                countdownEl.innerText = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            }
+        }, 1000);
+
+        // Gửi lại mã OTP qua AJAX
+        btnResend.addEventListener("click", function () {
+            btnResend.disabled = true;
+            btnResend.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang gửi...';
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const userId = document.querySelector('input[name="UserId"]').value;
+
+            const formData = new FormData();
+            formData.append("userId", userId);
+            formData.append("__RequestVerificationToken", token);
+
+            fetch('@Url.Action("ResendLoginOtp", "Account")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    timeLeft = 300; // Reset timer
+                    alert("✅ " + data.message);
+                    location.reload();
+                } else {
+                    alert("❌ " + data.message);
+                }
+            })
+            .catch(err => {
+                alert("Đã xảy ra lỗi khi gửi lại mã OTP.");
+            })
+            .finally(() => {
+                btnResend.disabled = false;
+                btnResend.innerHTML = '<i class="fa-solid fa-rotate-right me-1"></i> Gửi lại mã OTP';
+            });
+        });
+    </script>
+}
